@@ -26,6 +26,7 @@ import ros_services
 import inf_traj_series_dataset_classes as dataset_series_classes
 import simulation_parameters as sim_param
 
+import discretize_move as discr_move
 if sim_param.discr_hand_coded:
     import discretize_orientation_hand_coded as discr_orien
     import discretize_distance_hand_coded as discr_dist
@@ -33,6 +34,184 @@ else:
     import discretize_orientation_sections as discr_orien
     import discretize_inclination_sections as discr_inclin
     import discretize_distance_sections as discr_dist
+    
+import roslib
+roslib.load_manifest('std_msgs')
+import rospy
+from std_msgs.msg import Float64MultiArray
+
+'''
+callback class
+'''
+class Traj_callback():
+    def __init__(self, 
+                 simulated_traj, 
+                 simulated_obj_pos,
+                 current_orien, current_inclin, current_dist,
+                 eef_traj_vector, obj_traj_vector, delta_vector, inf_dicr,
+                 delta_class_vector, traj_res,
+                 expected_effect, obtained_effect):
+        self.simulated_obj_pos = simulated_obj_pos
+        self.current_orien = current_orien
+        self.current_inclin = current_inclin
+        self.current_dist = current_dist
+                     
+        self.eef_traj_vector = eef_traj_vector ## [[eef_x, eef_y, eef_z]]
+        self.obj_traj_vector = obj_traj_vector ## [[obj_x, obj_y, obj_z]]
+        self.delta_vector = delta_vector ## [[orientation, inclonation, distance, next_mov_discr]]
+        self.traj_inferred_discr_delta_vector = inf_dicr ## [[effect, idem]]
+        self.delta_class_vector = delta_class_vector
+        self.traj_res = traj_res ##success or false_pos or fail
+        self.expected_effect = expected_effect
+        self.obtained_effect = obtained_effect
+        
+        ## subscribe to feedback topic
+        self.sub = rospy.Subscriber(sim_param.feedback_topic, 
+                                   Float64MultiArray, 
+                                   self.execute_traj_callback,
+                                   queue_size=1)
+        ## execute trajectory
+        ros_services.call_trajectory_motion(sim_param.feedback_window, 
+                                            simulated_traj)                                            
+
+    def execute_traj_callback(self, feedback_data):
+        ''' Read feedback '''
+        pos = 0
+        batch_size = 6 * sim_param.feedback_window
+        for pos in range(0, len(feedback_data), batch_size):
+            feedback_wp_vector = []
+            feedback_obj_vector = []
+            nb_wp = sim_param.feedback_window
+            for i in nb_wp:
+                eef_pos_x = feedback_data[6*i+0]
+                eef_pos_y = feedback_data[6*i+1]
+                eef_pos_z = feedback_data[6*i+2]
+                feedback_wp_vector.append(eef_pos_x,
+                                          eef_pos_y,
+                                          eef_pos_z)
+                self.eef_traj_vector = \
+                    self.eef_traj_vector + feedback_wp_vector
+                
+                obj_pos_x = feedback_data[6*i+3]
+                obj_pos_y = feedback_data[6*i+4]
+                obj_pos_z = feedback_data[6*i+5]                
+                feedback_obj_vector.append(obj_pos_x,
+                                           obj_pos_y,
+                                           obj_pos_z)                
+                self.obj_traj_vector = \
+                    self.obj_traj_vector + feedback_obj_vector
+                
+        ''' Check if object moved'''
+        obj_moved = False
+        thrs = sim_param.obj_moved_threshold
+        initial_obj_pos = self.initial_obj_pos
+        for obj_pos in feedback_obj_vector:
+            obj_moved = \
+                (abs(initial_obj_pos[0] - obj_pos[0]) > thrs) or \
+                (abs(initial_obj_pos[1] - obj_pos[1]) > thrs) or \
+                (abs(initial_obj_pos[2] - obj_pos[2]) > thrs)                
+        self.compute_traj_info(feedback_wp_vector, 
+                               feedback_obj_vector,
+                               obj_moved)
+            
+        ''' If object not moved store traj'''
+        if not obj_moved :
+            self.traj_res = 'fail'
+        else: 
+            ''' If object position changes alone then
+                update trajectory'''   
+            stop_bool = rospy.get_param("/stop_traj")
+            if stop_bool:
+                self.sub.unregister() # close subscriber
+            else:
+                rospy.set_param("/stop_traj", "true") # stop execution                
+                
+    '''
+    a
+    '''
+    def compute_traj_info(self, 
+                          feedback_wp_vector, 
+                          feedback_obj_vector,
+                          obj_moved):
+        for pos in range(len(feedback_wp_vector)-1):
+            ## store delta also as delta class              
+            current_delta_class = delta.Delta(
+                        self.expected_effect,
+                        feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2],
+                        feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2],
+                        feedback_obj_vector[pos][0],
+                        feedback_obj_vector[pos][1],
+                        feedback_obj_vector[pos][2],
+                        feedback_obj_vector[pos+1][0],
+                        feedback_obj_vector[pos+1][1],
+                        feedback_obj_vector[pos+1][2],
+                        obj_moved)
+            self.delta_class_vector.append(current_delta_class)
+            
+            ## compute and store discretized values
+            move = discr_move.compute_move_discr(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]])
+    
+            orientation = discr_orien.compute_orientation_discr(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1]],
+                        self.current_orien_discr)
+                             
+            inclination = discr_inclin.compute_inclination_discr(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]],
+                        self.current_inclin_discr)
+
+            distance = discr_dist.compute_distance(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]],
+                        self.current_dist_discr)            
+            
+            self.delta_vector.append([orientation, inclination, distance, move])    
+
+        if obj_moved:
+            ''' Compute result '''
+            res = ''
+            self.obtained_effect = 'left'                    
+#            obtained_effect = env.identify_effect_3d(initial_obj_pos,
+#                                                     current_obj_pos)
+            if self.expected_effect == self.obtained_effect:
+                    res = 'success'
+            else:
+                    res = 'false_pos'
+                    
+            for tmp_delta in self.delta_vector:
+                ## in discr dataset file : 
+                ## effect,orientation,inclination,move,distance
+                self.traj_inferred_discr_delta_vector.append(
+                    [self.obtained_effect,  ## effect
+                     tmp_delta[0],  ## orientation
+                     tmp_delta[1],  ## inclination
+                     tmp_delta[3],  ## move
+                     tmp_delta[2]]) ## distance
+            
+            if sim_param.debug_infer:
+                print(self.expected_effect, self.obtained_effect)
+                print('Result :', res.upper())           
 
 '''
 Infere trajs for a dataset, algo and nb_init_pos, 
@@ -43,7 +222,7 @@ def infere_trajectories(current_results_folder,
                         alg,
                         dataset_size_class,
                         dataset_string,
-                        current_obj_pos,
+#                        current_obj_pos,
                         nb_initial_pos,
                         nb_traj,
                         current_orien,
@@ -95,14 +274,14 @@ def infere_trajectories(current_results_folder,
             desired_effect = sim_param.effect_values[nb_effect]
             
             ## infere traj
-            res, delta_nb_var, eef_traj, \
+            res, eef_traj, obj_traj, \
             delta_class_vector, obtained_effect, \
             tmp_inferred_discr_delta_vector = \
                 infere_traj(bn, ie,
                             nb_init_pos,
-                            init_pos_coord, ## coord XYZ
+#                            init_pos_coord, ## coord XYZ
                             desired_effect, 
-                            current_obj_pos,
+#                            current_obj_pos,
                             current_orien, current_inclin, current_dist)
 
             ## store current inferred traj
@@ -214,19 +393,15 @@ def infere_trajectories(current_results_folder,
     dataset_size_class.set_mean_prob_move(mean_prob)
     
     return total_inferred_discr_delta_vector
-      
+
 '''
-Infere new traj to get a desired effect
+Infere traj to get a desired effect
 '''
-def infere_traj(bn, ie, 
+def infere_traj(bn, ie,
                 nb_init_pos,
-                init_pos_coord, # XYZ
                 expected_effect, 
-                initial_obj_pos,
-                current_orien,
-                current_inclin,
-                current_dist):
-    
+                current_orien, current_inclin, current_dist):
+
     if sim_param.debug_infer:
         print('\n////////////////////////////////')
         print('NEW TRAJ for (init_pos, effect)', 
@@ -237,21 +412,83 @@ def infere_traj(bn, ie,
 #    if not success:
 #            print("ERROR - restart_world failed")
     
-    ''' Move eef to initial position '''     
-    success = ros_services.call_move_to_initial_position(nb_init_pos)
-#    if not success:
-#            print("ERROR - move_to_initial_position failed")
-    
-    ''' Infere new trajectory '''      
-    eef_pose = ros_services.call_get_eef_pose('left')      
-    eef_traj = [[eef_pose[0], eef_pose[1], eef_pose[2], 0]]
-    discr_traj = []
-    delta_vector = [] ## [orientation, distance, next_mov_discr]
+    eef_traj_vector = []
+    obj_traj_vector = []
+    delta_vector = []
+    inf_dicr = []
     delta_class_vector = []
-    obj_moved = False
-    i = 0
+    traj_res = ''
+    expected_effect = '' 
+    obtained_effect = ''
+    
+    while sim_param.current_feedback_window < sim_param.inferred_trajectories:
+        
+        ''' Get obj pos '''
+        initial_obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
+        
+        ''' Move eef to initial position and get position '''
+        success = ros_services.call_move_to_initial_position(nb_init_pos)
+        eef_pos = ros_services.call_get_eef_pose('left')
+        
+        ''' Simulate trajectory '''
+        traj, delta_vector = simulate_traj(bn, ie, 
+                                            eef_pos,
+                                            initial_obj_pos,
+                                            expected_effect, 
+                                            current_orien,
+                                            current_inclin,
+                                            current_dist)
+        
+        ''' Execute trajectory, listening to feedback '''
+        tc = Traj_callback(
+                traj, 
+                initial_obj_pos,
+                current_orien, current_inclin, current_dist,
+                eef_traj_vector, obj_traj_vector, delta_vector, inf_dicr,
+                delta_class_vector, traj_res,
+                expected_effect, obtained_effect)                      
+    
+        sim_param.obj_moved = False
+        sim_param.current_feedback_window = 0
+        sim_param.inferred_traj = []
+
+        ''' Running callbacks '''        
+        while not sim_param.obj_moved and \
+              sim_param.current_feedback_window < sim_param.inferred_trajectories:
+            pass
+        
+        ''' Values once trajectory execution stopped (but it can continue) '''
+        eef_traj_vector = tc.eef_traj_vector
+        obj_traj_vector = tc.obj_traj_vector
+        delta_vector = tc.obj_traj_vector
+        inf_dicr = tc.traj_inferred_discr_delta_vector
+        delta_class_vector = tc.delta_class_vector
+        traj_res = tc.traj_res
+        expected_effect = tc.expected_effect
+        obtained_effect = tc.obtained_effect           
+
+    return traj_res, \
+            eef_traj_vector, obj_traj_vector, \
+            delta_class_vector, \
+            obtained_effect, \
+            inf_dicr
+
+'''
+Simulate traj to get a desired effect
+'''
+def simulate_traj(bn, ie, 
+                eef_pos,
+                obj_pos,
+                expected_effect, 
+                current_orien,
+                current_inclin,
+                current_dist):
+    
+    eef_traj = [[eef_pos[0], eef_pos[1], eef_pos[2]]]
+    delta_vector = [] ## [orientation, inclination, distance, next_mov_discr]
+    obj_moved = False    
     delta_nb_var_res = -1
-    traj_inferred_discr_delta_vector = []
+    i = 0
     while not obj_moved and i < sim_param.inferred_max_moves:
         print('Inferred delta ', i)
         
@@ -262,18 +499,18 @@ def infere_traj(bn, ie,
         ## compute current variables value
         orientation = discr_orien.compute_orientation_discr(
             [current_eef_x,current_eef_y], 
-            initial_obj_pos,
+            obj_pos,
             current_orien)
             
         inclination = discr_inclin.compute_inclination_discr(
             [current_eef_x,current_eef_y,current_eef_z], 
-            initial_obj_pos,
+            obj_pos,
             current_inclin)
         print("current inclination :", inclination)
                             
         distance = discr_dist.compute_distance(
             [current_eef_x,current_eef_y], 
-            initial_obj_pos,
+            obj_pos,
             current_dist)
         node_names = ['effect','orientation', 'inclination', 'distance']
         node_values = [expected_effect,orientation, inclination, distance]
@@ -313,167 +550,158 @@ def infere_traj(bn, ie,
         elif 'down' in next_mov_discr:
             delta_z = -mov_step
         print("DELTA :", delta_x, delta_y, delta_z)
-              
-        ## move eef to new position
-        success = ros_services.call_execute_delta_motion(delta_x, 
-                                                         delta_y, 
-                                                         delta_z)
-#        if not success:
-#            print("ERROR - infere_traj : delta move failed")
-                                                         
-        eef_pose = ros_services.call_get_eef_pose('left')      
-        next_eef_x = eef_pose[0]
-        next_eef_y = eef_pose[1]
-        next_eef_z = eef_pose[2]
-              
-        ## check if obj was moved
-        current_obj_pos = [-1, -1, -1]
-        current_obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
-#        print(current_obj_pos)
-        obj_moved = (abs(initial_obj_pos[0] - current_obj_pos[0]) > 0.01) or \
-                    (abs(initial_obj_pos[1] - current_obj_pos[1]) > 0.01)
-        if obj_moved:
-            if sim_param.debug_infer:
-                print('OBJECT MOOOOOOOOOOVED!!!!')
-                print(initial_obj_pos)
-                print(current_obj_pos[0:3])
-                print(abs(initial_obj_pos[0]-current_obj_pos[0]),
-                      abs(initial_obj_pos[1]-current_obj_pos[1]),
-                      abs(initial_obj_pos[2]-current_obj_pos[2]))
-
-        ## store delta also as delta class              
-        current_delta_class = delta.Delta(
-                    expected_effect,
-                    current_eef_x,current_eef_y,sim_param.eef_z_value,
-                    next_eef_x, next_eef_y, next_eef_z,
-                    initial_obj_pos[0], initial_obj_pos[1], initial_obj_pos[2],
-                    current_obj_pos[0], current_obj_pos[1], current_obj_pos[2],
-                    obj_moved)            
-        delta_class_vector.append(current_delta_class)
-    
-        discr_traj.append(next_mov_discr)        
-        eef_traj.append([next_eef_x,
-                         next_eef_y, 
-                         next_eef_z, 
-                         prob_value])
-        delta_vector.append([orientation, distance, next_mov_discr])
         
-        i += 1                                                
+        ## move eef to new position
+        next_eef_x = current_eef_x + delta_x
+        next_eef_y = current_eef_y + delta_y
+        next_eef_z = current_eef_z + delta_z
+        
+        eef_traj = [next_eef_x, next_eef_y, next_eef_z]
+        delta_vector.append([orientation, inclination, distance, 
+                             next_mov_discr])
 
-    ''' Compute result '''
-    res = ''
-    obtained_effect = ''
-    if not obj_moved:
-        if sim_param.debug_infer:
-            print('OBJECT nottttttttttttt moved!!!!')
-        res = 'fail'
-        traj_inferred_discr_delta_vector = []
-    else:        
-        obtained_effect = env.identify_effect_3d(initial_obj_pos,
-                                                 current_obj_pos)
-        if expected_effect == obtained_effect:
-                res = 'success'
+        ## check if obj was moved
+        obj_moved = env.check_obj_moved(
+                        obj_pos,
+                        [current_eef_x,current_eef_y,current_eef_z], 
+                        [next_eef_x,next_eef_y,next_eef_z])
+
+    return eef_traj, delta_vector
+
+
+'''
+Find pos of value given label 
+Output: pos
+'''
+def findPosLabel(rand_var,label):
+    label_found = False
+    pos = 0
+    while not label_found and pos < rand_var.domainSize():
+        if rand_var.label(pos) == label:
+            label_found = True
+            return pos
+        pos += 1
+
+    if not label_found:
+        return -1
+        
+'''
+Infere next movement
+
+bn = current bn
+ie = inference setup
+discr_values = 
+
+'''
+def infere_mov(bn, ie, node_names, node_values):    
+
+    ''' Add soft evidence '''        
+    ## generate dict with current node values to apply
+    values_dict = dict()
+    for i in range(len(node_names)): 
+        current_node = node_names[i]
+        current_value = node_values[i]
+        values_dict[current_node] = current_value
+
+    if sim_param.debug:
+        for i in values_dict:
+            print (i, values_dict[i])
+
+    ## transform each node values for the correspondant array 
+    ## with 1 in the position of the current node value
+    ## ej : if the possible node values are a b c, and we want to set c
+    ## then it is 0 0 1
+    for key in values_dict:        
+        random_var = bn.variable(bn.idFromName(key))
+        pos = findPosLabel(random_var,values_dict[key])
+        if pos==-1:
+            print("Label not found for",str(key),values_dict[key])
         else:
-                res = 'false_pos'
-                
-        for tmp_delta in delta_vector:
-            traj_inferred_discr_delta_vector.append(
-                [obtained_effect, 
-                 tmp_delta[0], 
-                 tmp_delta[2],
-                 tmp_delta[1]])
+            tmp=np.zeros(random_var.domainSize())
+            for p in range(len(tmp)):
+                if p==pos:
+                    tmp[p] = 1
+                else:
+                    tmp[p] = 0
+            values_dict[key] = tmp.tolist()
+        
+    ie.setEvidence(values_dict)
     
-    if sim_param.debug_infer:
-        print(expected_effect, obtained_effect)
-        print('Result :', res.upper())
+    ''' Infere next movement to be done '''    
+    ie.makeInference()
     
-    return res, delta_nb_var_res, eef_traj, \
-            delta_class_vector, \
-            obtained_effect, \
-            traj_inferred_discr_delta_vector
-
-
-''' 
-Compute score for each algorithm of a dataset type
-Score = mean value of the perfomance value of an algorithm for a dataset
-Example : for extended, hand-coded, mean perf_value when nb_init_pos = 4, 8, etc.
-'''
-def compute_score_norm(dataset_stat,
-                  learn_algo_vector):
-    dataset_score = 0
-    for current_algo in learn_algo_vector:
-        added_norm_perf = 0
-        current_algo_class = dataset_stat.get_algo_results(current_algo)
-        current_traj_dict = current_algo_class.get_results_dict()        
-        for nb_init_pos, dataset_size_res_class in current_traj_dict.items():
-            nb_trajs = sum(dataset_size_res_class.get_inference_res())
-            max_performance = sim_param.perf_success_value*nb_trajs
-            added_norm_perf += \
-                (float(dataset_size_res_class.get_global_performance_value())/max_performance)*100
-        algo_score = (added_norm_perf/len(current_traj_dict.keys()))
-        current_algo_class.set_algo_score(algo_score)
-        dataset_score += algo_score
+    ## get posterior    
+    posterior = ie.posterior(bn.idFromName('move'))
+#    if sim_param.debug:
+    print(posterior)
+#    print(posterior[0])
+#    print(posterior[-1])
+#    print(type(posterior))
+#    print(type(posterior[0]))
+#    print(posterior.variablesSequence()[0])
+#    print(type(posterior.variablesSequence()[0]))
+#    print(posterior.variablesSequence()[0].labels())
     
-    dataset_stat.set_dataset_score(float(dataset_score)/len(learn_algo_vector))
 
-'''
-Check if the posterior score is better than the previous one
-'''
-def check_better_score_norm(curr_score_vector, 
-                       prev_score_vector):
-            
-    ## global score higher 
-    if curr_score_vector[0] == prev_score_vector[0]:
-        return 'equal'
-    elif curr_score_vector[0] > prev_score_vector[0]:
-        return 'bigger'
+#    ## check if all values of 'move' have been generated
+    move_var = bn.variable(bn.idFromName('move'))    
+    move_nb_var = move_var.domainSize()
+#    if move_nb_var != len(sim_param.move_values):
+#        print('ERROR - infere_mov- Some move value is not available in the dataset')
+#        sys.exit()
+
+    ## get used moves
+    move_list = []
+    for pos in range(move_nb_var):
+        move_list.append((posterior.variablesSequence())[0].label(pos))
+        pos += 1
+
+    ## select value of next move
+    ## check if some prob is very high, or if 2 variables have a similar value
+    posterior_list = []
+#    for i in range(len(sim_param.move_values)):
+    for i in range(len(move_list)):
+        posterior_list.append(posterior[i])
+        
+    if all(x==posterior_list[0] for x in posterior_list):## no prob inferred
+#        posterior_pos = 0
+        posterior_pos = random.randint(0,len(posterior_list)-1)
+        posterior_value = posterior_list[posterior_pos]
     else:
-        return 'smaller'
-
-
-'''
-Compute cumulated performance value of each init position
-given a dataset and a dicretization configuration
-Store vector representing for each dataset, for each (algo, nb_init_pos) 
-each position of the vector the perf_value of a init_pos, in range (0,nb_init_pos)
-'''
-def compute_perf_value_for_init_pos(current_dataset,
-                                   current_algo,
-                                   nb_init_pos_vector):
-
-    max_added_perf_value = sim_param.perf_success_value * \
-                            len(sim_param.effect_values)
-
-    dataset_cumulated_perf_value_dict = OrderedDict()
-    current_infer_algo_class = current_dataset.get_algo_results(current_algo)
-    current_infer_algo_dict = current_infer_algo_class.get_results_dict()
-    for current_nb_init_pos in nb_init_pos_vector: ## 8, 16, 32
-        if sim_param.debug:
-            print("current_dataset", current_dataset.get_dataset_name())
-            print("current_nb_init_pos", current_nb_init_pos)
-        current_dataset_size_class = \
-            current_infer_algo_dict[current_nb_init_pos]
-        current_dataset_size_dict = \
-            current_dataset_size_class.get_indiv_traj_info()
-        cumulated_perf_value_vector = []
-        for current_init_pos in range(current_nb_init_pos):
-            if sim_param.debug:
-                print("current_init_pos", current_init_pos)
-            added_perf_value = 0
-            for current_effect in sim_param.effect_values:
-                current_pos_effect_perf = \
-                    current_dataset_size_dict[(current_init_pos, 
-                                         current_effect)].get_perf_value()
-                added_perf_value += current_pos_effect_perf
-            added_perf_value = (float(added_perf_value)/max_added_perf_value)*100            
-            if sim_param.debug:                
-                print("Cumulated perf value", added_perf_value)
-            cumulated_perf_value_vector.append(added_perf_value)
+        max_value = max(posterior_list)
+        posterior_pos = posterior_list.index(max_value)
+        posterior_value = posterior_list[posterior_pos]
+#        max_value = max(posterior_list)
+#        max_pos = posterior_list.index(max_value)
+#        
+#        if max_value > 0.9: ## very high
+#            posterior_pos = max_pos              
+#        else: ## several probs
+#            posterior_list[max_pos] = 0
+#            second_max_value = max(posterior_list)
+#            second_max_pos = posterior_list.index(max(posterior_list))
+#
+##            if max_value > 2*second_max_value: ## far probs
+##                posterior_pos = max_pos
+##            else: ## close probs
+##                posterior_pos = random.choice([max_pos, second_max_pos])
+#
+#            if max_value == second_max_value:
+#                posterior_pos = random.choice([max_pos, second_max_pos])
+#            else:
+#                posterior_pos = max_pos
+#            
+#        if posterior_pos == max_pos:
+#            posterior_value = max_value
+#        else:
+#            posterior_value = second_max_value
             
-        dataset_cumulated_perf_value_dict[current_nb_init_pos] = \
-            cumulated_perf_value_vector
-            
-    return dataset_cumulated_perf_value_dict
+    move_value = (posterior.variablesSequence())[0].label(posterior_pos)    
+    if sim_param.debug:
+        print("Best posterior of move is", move_value.upper(),\
+            "with prob", posterior_value, "in position", posterior_pos, '\n')      
+    
+    return move_value, round(posterior_value,3), int(move_nb_var)
     
 #'''
 #Plot new inferred traj
@@ -616,137 +844,84 @@ def compute_perf_value_for_init_pos(current_dataset,
 #    if sim_param.plot_trajs or sim_param.plot_some_trajs:
 #        plt.show()
             
+''' 
+Compute score for each algorithm of a dataset type
+Score = mean value of the perfomance value of an algorithm for a dataset
+Example : for extended, hand-coded, mean perf_value when nb_init_pos = 4, 8, etc.
 '''
-Find pos of value given label 
-Output: pos
-'''
-def findPosLabel(rand_var,label):
-    label_found = False
-    pos = 0
-    while not label_found and pos < rand_var.domainSize():
-        if rand_var.label(pos) == label:
-            label_found = True
-            return pos
-        pos += 1
-
-    if not label_found:
-        return -1
-        
-'''
-Infere next movement
-
-bn = current bn
-ie = inference setup
-discr_values = 
-
-'''
-def infere_mov(bn, ie, node_names, node_values):    
-
-    ''' Add soft evidence '''        
-    ## generate dict with current node values to apply
-    values_dict = dict()
-    for i in range(len(node_names)): 
-        current_node = node_names[i]
-        current_value = node_values[i]
-        values_dict[current_node] = current_value
-
-    if sim_param.debug:
-        for i in values_dict:
-            print (i, values_dict[i])
-
-    ## transform each node values for the correspondant array 
-    ## with 1 in the position of the current node value
-    ## ej : if the possible node values are a b c, and we want to set c
-    ## then it is 0 0 1
-    for key in values_dict:        
-        random_var = bn.variable(bn.idFromName(key))
-        pos = findPosLabel(random_var,values_dict[key])
-        if pos==-1:
-            print("Label not found for",str(key),values_dict[key])
-        else:
-            tmp=np.zeros(random_var.domainSize())
-            for p in range(len(tmp)):
-                if p==pos:
-                    tmp[p] = 1
-                else:
-                    tmp[p] = 0
-            values_dict[key] = tmp.tolist()
-        
-    ie.setEvidence(values_dict)
+def compute_score_norm(dataset_stat,
+                  learn_algo_vector):
+    dataset_score = 0
+    for current_algo in learn_algo_vector:
+        added_norm_perf = 0
+        current_algo_class = dataset_stat.get_algo_results(current_algo)
+        current_traj_dict = current_algo_class.get_results_dict()        
+        for nb_init_pos, dataset_size_res_class in current_traj_dict.items():
+            nb_trajs = sum(dataset_size_res_class.get_inference_res())
+            max_performance = sim_param.perf_success_value*nb_trajs
+            added_norm_perf += \
+                (float(dataset_size_res_class.get_global_performance_value())/max_performance)*100
+        algo_score = (added_norm_perf/len(current_traj_dict.keys()))
+        current_algo_class.set_algo_score(algo_score)
+        dataset_score += algo_score
     
-    ''' Infere next movement to be done '''    
-    ie.makeInference()
-    
-    ## get posterior    
-    posterior = ie.posterior(bn.idFromName('move'))
-#    if sim_param.debug:
-    print(posterior)
-#    print(posterior[0])
-#    print(posterior[-1])
-#    print(type(posterior))
-#    print(type(posterior[0]))
-#    print(posterior.variablesSequence()[0])
-#    print(type(posterior.variablesSequence()[0]))
-#    print(posterior.variablesSequence()[0].labels())
-    
+    dataset_stat.set_dataset_score(float(dataset_score)/len(learn_algo_vector))
 
-#    ## check if all values of 'move' have been generated
-    move_var = bn.variable(bn.idFromName('move'))    
-    move_nb_var = move_var.domainSize()
-#    if move_nb_var != len(sim_param.move_values):
-#        print('ERROR - infere_mov- Some move value is not available in the dataset')
-#        sys.exit()
-
-    ## get used moves
-    move_list = []
-    for pos in range(move_nb_var):
-        move_list.append((posterior.variablesSequence())[0].label(pos))
-        pos += 1
-
-    ## select value of next move
-    ## check if some prob is very high, or if 2 variables have a similar value
-    posterior_list = []
-#    for i in range(len(sim_param.move_values)):
-    for i in range(len(move_list)):
-        posterior_list.append(posterior[i])
-        
-    if all(x==posterior_list[0] for x in posterior_list):## no prob inferred
-#        posterior_pos = 0
-        posterior_pos = random.randint(0,len(posterior_list)-1)
-        posterior_value = posterior_list[posterior_pos]
+'''
+Check if the posterior score is better than the previous one
+'''
+def check_better_score_norm(curr_score_vector, 
+                       prev_score_vector):
+            
+    ## global score higher 
+    if curr_score_vector[0] == prev_score_vector[0]:
+        return 'equal'
+    elif curr_score_vector[0] > prev_score_vector[0]:
+        return 'bigger'
     else:
-        max_value = max(posterior_list)
-        posterior_pos = posterior_list.index(max_value)
-        posterior_value = posterior_list[posterior_pos]
-#        max_value = max(posterior_list)
-#        max_pos = posterior_list.index(max_value)
-#        
-#        if max_value > 0.9: ## very high
-#            posterior_pos = max_pos              
-#        else: ## several probs
-#            posterior_list[max_pos] = 0
-#            second_max_value = max(posterior_list)
-#            second_max_pos = posterior_list.index(max(posterior_list))
-#
-##            if max_value > 2*second_max_value: ## far probs
-##                posterior_pos = max_pos
-##            else: ## close probs
-##                posterior_pos = random.choice([max_pos, second_max_pos])
-#
-#            if max_value == second_max_value:
-#                posterior_pos = random.choice([max_pos, second_max_pos])
-#            else:
-#                posterior_pos = max_pos
-#            
-#        if posterior_pos == max_pos:
-#            posterior_value = max_value
-#        else:
-#            posterior_value = second_max_value
+        return 'smaller'
+
+
+'''
+Compute cumulated performance value of each init position
+given a dataset and a dicretization configuration
+Store vector representing for each dataset, for each (algo, nb_init_pos) 
+each position of the vector the perf_value of a init_pos, in range (0,nb_init_pos)
+'''
+def compute_perf_value_for_init_pos(current_dataset,
+                                   current_algo,
+                                   nb_init_pos_vector):
+
+    max_added_perf_value = sim_param.perf_success_value * \
+                            len(sim_param.effect_values)
+
+    dataset_cumulated_perf_value_dict = OrderedDict()
+    current_infer_algo_class = current_dataset.get_algo_results(current_algo)
+    current_infer_algo_dict = current_infer_algo_class.get_results_dict()
+    for current_nb_init_pos in nb_init_pos_vector: ## 8, 16, 32
+        if sim_param.debug:
+            print("current_dataset", current_dataset.get_dataset_name())
+            print("current_nb_init_pos", current_nb_init_pos)
+        current_dataset_size_class = \
+            current_infer_algo_dict[current_nb_init_pos]
+        current_dataset_size_dict = \
+            current_dataset_size_class.get_indiv_traj_info()
+        cumulated_perf_value_vector = []
+        for current_init_pos in range(current_nb_init_pos):
+            if sim_param.debug:
+                print("current_init_pos", current_init_pos)
+            added_perf_value = 0
+            for current_effect in sim_param.effect_values:
+                current_pos_effect_perf = \
+                    current_dataset_size_dict[(current_init_pos, 
+                                         current_effect)].get_perf_value()
+                added_perf_value += current_pos_effect_perf
+            added_perf_value = (float(added_perf_value)/max_added_perf_value)*100            
+            if sim_param.debug:                
+                print("Cumulated perf value", added_perf_value)
+            cumulated_perf_value_vector.append(added_perf_value)
             
-    move_value = (posterior.variablesSequence())[0].label(posterior_pos)    
-    if sim_param.debug:
-        print("Best posterior of move is", move_value.upper(),\
-            "with prob", posterior_value, "in position", posterior_pos, '\n')      
-    
-    return move_value, round(posterior_value,3), int(move_nb_var)
+        dataset_cumulated_perf_value_dict[current_nb_init_pos] = \
+            cumulated_perf_value_vector
             
+    return dataset_cumulated_perf_value_dict

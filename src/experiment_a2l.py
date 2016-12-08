@@ -17,8 +17,7 @@ import learning as ln
 import simulation_parameters as sim_param
 import inf_traj_series_dataset_classes as dataset_series_classes
 if sim_param.print_time:
-        import time
-        
+        import time        
 import ros_services
 
 '''
@@ -26,7 +25,7 @@ Run basic learning
 '''
 def basic_learning_dataset_size(dataset_type_vector,
                                 learn_algo_vector,
-                                current_obj_pos,
+#                                current_obj_pos,
                                 current_results_folder):
           
     ## Create discretizations
@@ -130,7 +129,7 @@ def basic_learning_dataset_size(dataset_type_vector,
                     current_algo,
                     dataset_size_class,
                     dataset_type,
-                    current_obj_pos,                    
+#                    current_obj_pos,                    
                     current_nb_initial_pos,
                     0, ## number of traj
                     current_orien_discr,
@@ -160,7 +159,7 @@ Run adaptive learning
 def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                     current_nb_initial_pos, ## 8
                                     learn_algo_vector,
-                                    current_obj_pos,
+#                                    current_obj_pos,
                                     current_results_folder, 
                                     current_orien_discr,
                                     current_inclin_discr,
@@ -212,7 +211,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
     ## remove small moves
     nb_removed = 0
     for discr_delta in discr_delta_vector:
-        if discr_delta[2] == 'zero':
+        if discr_delta[3] == 'zero':
             discr_delta_vector.remove(discr_delta)
             nb_removed += 1
     if nb_removed > 0:
@@ -248,7 +247,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                 current_algo,
                 dataset_size_class,
                 current_dataset_name,
-                current_obj_pos,            
+#                current_obj_pos,            
                 current_nb_initial_pos,
                 current_iteration,
                 current_orien_discr,

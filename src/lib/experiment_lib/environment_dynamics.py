@@ -115,10 +115,11 @@ def doIntersect(p1,q1,p2,q2):
 # if interaction from the left -> obj_pos moves right (0.3, 0, 0)
 # if interaction from the right -> obj_pos moves left (-0.3, 0, 0)        
 
-def compute_obj_pos(_wp, 
+def check_obj_moved(box_pos,
+                    _wp, 
                     _wp_next):
                         
-    box_pos = sim_param.obj_pos
+#    box_pos = sim_param.obj_pos
     box_side = sim_param.obj_side        
     
     ## object corners
@@ -141,60 +142,21 @@ def compute_obj_pos(_wp,
     while i < 2 and not obj_moved:
         wp_mid_point_x = (_wp[0] + _wp_next[0]) / 2
         wp_mid_point_y = (_wp[1] + _wp_next[1]) / 2
+        wp_mid_point_z = (_wp[2] + _wp_next[2]) / 2
         if i == 0:
             wp = Point(_wp[0], _wp[1], _wp[2])        
-            wp_next = Point(wp_mid_point_x, wp_mid_point_y, 0)
+            wp_next = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
         else:
-            wp = Point(wp_mid_point_x, wp_mid_point_y, 0)
+            wp = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
             wp_next = Point(_wp_next[0], _wp_next[1], _wp_next[2])            
 
-        new_box_pos = box_pos
-        if _wp[0] > _wp_next[0]: ## right to left -> LEFT
-            if doIntersect(wp, wp_next, l_top_right, l_bottom_right):
-                obj_moved = True
-                new_box_pos = [box_pos[0] - sim_param.obj_displacement, 
-                               box_pos[1],
-                                box_pos[2]]
-        if _wp[0] < _wp_next[0] and not obj_moved: ## left to right-> RIGHT                
-            if doIntersect(wp, wp_next, l_top_left, l_bottom_left):
-                obj_moved = True
-                new_box_pos = [box_pos[0] + sim_param.obj_displacement, 
-                               box_pos[1],
-                                box_pos[2]]
-
-        if _wp[1] > _wp_next[1] and not obj_moved: ## up to down -> DOWN
-            if doIntersect(wp, wp_next, l_top_left, l_top_right):
-                obj_moved = True
-                new_box_pos = [box_pos[0], 
-                               box_pos[1] - sim_param.obj_displacement,
-                                box_pos[2]]
-        if _wp[1] < _wp_next[1] and not obj_moved: ## down to up -> UP
-            if doIntersect(wp, wp_next, l_bottom_left, l_bottom_right):
-                obj_moved = True
-                new_box_pos = [box_pos[0], 
-                               box_pos[1] + sim_param.obj_displacement,
-                                box_pos[2]]                                                                        
-        
-        obj_moved = True \
-                if new_box_pos != box_pos else False
+        if doIntersect(wp, wp_next, l_top_right, l_bottom_right) or \
+           doIntersect(wp, wp_next, l_top_left, l_bottom_left) or \
+           doIntersect(wp, wp_next, l_top_left, l_top_right) or \
+           doIntersect(wp, wp_next, l_bottom_left, l_bottom_right):
+           obj_moved = True
         i += 1
-    if obj_moved:                    
-        return new_box_pos
-    else:
-        return box_pos    
-#    else:
-#        return box_pos
-
-#if __name__ == "__main__":
-#    print(compute_obj_pos([0,0.5,0],[0,0.01,0])) # to the bottom
-#    print(compute_obj_pos([0,-0.5,0],[0,-0.01,0])) # up
-#    print(compute_obj_pos([0.5,0,0],[0.01,0,0])) # to the left
-#    print(compute_obj_pos([-0.5,-0,0],[-0.01,0,0])) # to the right
-    
-#    print(compute_obj_pos([-0.2,0,0],[0,-0.2,0])) # to the right
-#    print(compute_obj_pos([0.2,0,0],[0,-0.2,0])) # to the left
-#    print(compute_obj_pos([0.2,0,0],[0,1,0])) # to the left
-#    print(compute_obj_pos([-0.1,-1,0],[0.1,10,0])) # up
+    return obj_moved
 
 #'''
 #Given a effect return the related final position
@@ -255,4 +217,14 @@ Test
 '''
 if __name__ == '__main__':
 #    print(identify_effect([-0.3,0,0]))
-    print(identify_effect_3d([0,0,0], [-.2,-0.3,0]))
+#    print(identify_effect_3d([0,0,0], [-.2,-0.3,0]))
+
+    print(check_obj_moved([0,0,0], [0,0.5,0],[0,0.01,0])) # to the bottom
+    print(check_obj_moved([0,0,0], [0,-0.5,0],[0,-0.01,0])) # up
+    print(check_obj_moved([0,0,0], [0.5,0,0],[0.01,0,0])) # to the left
+    print(check_obj_moved([0,0,0], [-0.5,-0,0],[-0.01,0,0])) # to the right
+    
+    print(check_obj_moved([0,0,0], [-0.2,0,0],[0,-0.2,0])) # to the right
+    print(check_obj_moved([0,0,0], [0.2,0,0],[0,-0.2,0])) # to the left
+    print(check_obj_moved([0,0,0], [0.2,0,0],[0,1,0])) # to the left
+    print(check_obj_moved([0,0,0], [-0.1,-1,0],[0.1,10,0])) # up

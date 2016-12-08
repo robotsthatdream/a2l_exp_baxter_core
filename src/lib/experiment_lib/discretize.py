@@ -88,10 +88,10 @@ def discretize_trajs(delta_vector,
         
         ''' Compute move '''
         move = discr_move.compute_move_discr(
-                    [current_delta.get_wp_init().get_x(),
+                     [current_delta.get_wp_init().get_x(),
                      current_delta.get_wp_init().get_y(),
                      current_delta.get_wp_init().get_z()],
-                    [current_delta.get_wp_final().get_x(),
+                     [current_delta.get_wp_final().get_x(),
                      current_delta.get_wp_final().get_y(),
                      current_delta.get_wp_final().get_z()])
 
@@ -99,47 +99,38 @@ def discretize_trajs(delta_vector,
     
             ''' Compute orientation ''' 
             orientation = discr_orien.compute_orientation_discr(
-                            [current_delta.get_wp_init().get_x(),
+                             [current_delta.get_wp_init().get_x(),
                              current_delta.get_wp_init().get_y()],
                              [current_delta.get_obj_init().get_x(),
-                              current_delta.get_obj_init().get_y()],
+                             current_delta.get_obj_init().get_y()],
                              current_orien_discr)
                              
             ''' Compute inclination ''' 
             inclination = discr_inclin.compute_inclination_discr(
-                            [current_delta.get_wp_init().get_x(),
+                             [current_delta.get_wp_init().get_x(),
                              current_delta.get_wp_init().get_y(),
                              current_delta.get_wp_init().get_z()],
                              [current_delta.get_obj_init().get_x(),
-                              current_delta.get_obj_init().get_y(),
-                              current_delta.get_obj_init().get_z()],
+                             current_delta.get_obj_init().get_y(),
+                             current_delta.get_obj_init().get_z()],
                              current_inclin_discr)
-            print(inclination)
-            
-            if sim_param.distance_param :
-                ''' Compute distance '''
-                distance = discr_dist.compute_distance(
-                            [current_delta.get_wp_init().get_x(),
-                             current_delta.get_wp_init().get_y()],
-                             [current_delta.get_obj_init().get_x(),
-                              current_delta.get_obj_init().get_y()], ## to remove Z coord
-                            current_dist_discr)
-                             
-                discr_dataset_vector.append([current_delta.get_effect(), 
-                                             orientation,
-                                             inclination,
-                                             move,
-                                             distance])
-#                print([current_delta.get_effect(), 
-#                                             orientation, 
-#                                             inclination,
-#                                             move,
-#                                             distance])                                             
-            else:
-                discr_dataset_vector.append([current_delta.get_effect(), 
-                                             orientation, 
-                                             inclination,
-                                             move])
+
+
+            ''' Compute distance '''
+            distance = discr_dist.compute_distance(
+                         [current_delta.get_wp_init().get_x(),
+                         current_delta.get_wp_init().get_y(),
+                         current_delta.get_wp_init().get_z()],
+                         [current_delta.get_obj_init().get_x(),
+                         current_delta.get_obj_init().get_y(),
+                         current_delta.get_obj_init().get_z()], ## to remove Z coord
+                         current_dist_discr)
+                         
+            discr_dataset_vector.append([current_delta.get_effect(), 
+                                         orientation,
+                                         inclination,
+                                         move,
+                                         distance])
         nb_delta += 1    
     
     return discr_dataset_vector

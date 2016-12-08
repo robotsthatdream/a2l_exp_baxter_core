@@ -76,9 +76,18 @@ nb_dataset_sizes = 1 ## number of increments of init pos : 8->16->32->64
 eef_z_value = 0.14
 obj_name = "cube"
 
+''' ROS execution '''
+feedback_topic = '/a2l/traj_exec_info'
+feedback_window = 2
+current_feedback_window = 0
+obj_moved = False
+obj_moved_threshold = 0.1
+inferred_traj = []
+
 ''' Experiment set-up values '''
 #obj_pos = [0,0,0]
 obj_side = 0.06
+obj_displacement = 0.3
 circumference_radio = 0.2
 colormap_values = ['red','yellow','green','black']
 
@@ -90,6 +99,7 @@ same_move_value = 0.025
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
 step_length = 0.05 # obj_side/2
 random_max_movs = 10
+inferred_trajectories = 25
 inferred_max_moves = random_max_movs*2
 
 ''' Discretization predefined values'''

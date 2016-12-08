@@ -85,6 +85,25 @@ def call_execute_delta_motion(delta_x, delta_y, delta_z):
     except rospy.ServiceException, e:
         print ("Service call to execute_delta_motion failed: %s"%e)     
         
+
+'''
+a
+'''
+def call_trajectory_motion(feedback_frequency, trajectory):
+    service_name = 'a2l/trajectory_motion'
+    rospy.wait_for_service(service_name)
+    try:
+        if sim_param.debug_services:
+            print('--> CALL SERVICE execute_trajectory')        
+        type_name = Deltatrajectory
+        execute_traj = rospy.ServiceProxy(service_name, 
+                                                  type_name)
+        resp = execute_traj(feedback_frequency,
+                            trajectory)
+        time.sleep(2)
+        return resp.success        
+    except rospy.ServiceException, e:
+        print ("Service call to execute_delta_motion failed: %s"%e) 
         
 '''
 a
@@ -139,9 +158,11 @@ if __name__  == "__main__":
 #                                    -0.05, 
 #                                    0))
     
-    print("call_move_to_initial_position left", 
-          call_move_to_initial_position(1))
+#    print("call_move_to_initial_position left", 
+#          call_move_to_initial_position(1))
     
+    print("call_trajectory_motion", 
+           call_trajectory_motion([0.65,0.2,0.1,0.5,0,0,0.7,0.3,0.2]))    
     
    
 

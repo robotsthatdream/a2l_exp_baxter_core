@@ -66,9 +66,7 @@ def read_dataset(filename):
                                                  obj_final_pos)
 #        print('Nb WPs', len(pos_rot_vector)//12)
 #        for pos in range(0, len(pos_rot_vector)-12, 12):
-        ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ## TBD!!! FIRST POSITION REPEATED, THEN REMOVED IT BY HAND
-        for pos in range(12, len(pos_rot_vector)-12, 12):
+        for pos in range(0, len(pos_rot_vector)-12, 12):
             current_x = float(pos_rot_vector[pos+0])
             current_y = float(pos_rot_vector[pos+1])
             current_z = float(pos_rot_vector[pos+2])
