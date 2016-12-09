@@ -213,7 +213,7 @@ if __name__ == "__main__":
             exp_a2l.basic_learning_dataset_size(
                 dataset_type_vector,
                 learn_algo_vector,
-                initial_obj_pos,
+#                initial_obj_pos,
                 current_results_folder)
                                         
         ''' Compute score '''

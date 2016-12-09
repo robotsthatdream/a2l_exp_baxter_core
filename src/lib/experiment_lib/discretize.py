@@ -107,12 +107,12 @@ def discretize_trajs(delta_vector,
                              
             ''' Compute inclination ''' 
             inclination = discr_inclin.compute_inclination_discr(
-                             [current_delta.get_wp_init().get_x(),
-                             current_delta.get_wp_init().get_y(),
-                             current_delta.get_wp_init().get_z()],
                              [current_delta.get_obj_init().get_x(),
                              current_delta.get_obj_init().get_y(),
                              current_delta.get_obj_init().get_z()],
+                             [current_delta.get_wp_init().get_x(),
+                             current_delta.get_wp_init().get_y(),
+                             current_delta.get_wp_init().get_z()],                             
                              current_inclin_discr)
 
 

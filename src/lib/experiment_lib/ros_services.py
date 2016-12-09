@@ -98,7 +98,7 @@ def call_trajectory_motion(feedback_frequency, trajectory):
         type_name = Deltatrajectory
         execute_traj = rospy.ServiceProxy(service_name, 
                                                   type_name)
-        resp = execute_traj(feedback_frequency,
+        resp = execute_traj(float(feedback_frequency),
                             trajectory)
         time.sleep(2)
         return resp.success        
@@ -162,7 +162,7 @@ if __name__  == "__main__":
 #          call_move_to_initial_position(1))
     
     print("call_trajectory_motion", 
-           call_trajectory_motion([0.65,0.2,0.1,0.5,0,0,0.7,0.3,0.2]))    
+           call_trajectory_motion(2, [0.65,0.2,0.1,0.5,0,0,0.7,0.3,0.2]))    
     
    
 

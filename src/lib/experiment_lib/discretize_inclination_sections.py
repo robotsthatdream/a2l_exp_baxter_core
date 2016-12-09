@@ -111,18 +111,18 @@ class Sections:
 Compute angle of a vector respect to the vertical axis in range [0, Pi/2]
 http://mathworld.wolfram.com/SphericalCoordinates.html
 '''
-def angle_2_ordinate(pos_eef, pos_obj):
+def angle_2_ordinate(pos_init, pos_final):
 #    vector = [pos_eef[0] - pos_obj[0],
 #              pos_eef[1] - pos_obj[1], 
 #              pos_eef[2] - pos_obj[2]]
-    vector = [pos_obj[0] - pos_eef[0],
-              pos_obj[1] - pos_eef[1], 
-              pos_obj[2] - pos_eef[2]]
+    vector = [pos_final[0] - pos_init[0],
+              pos_final[1] - pos_init[1], 
+              pos_final[2] - pos_init[2]]
     xy = math.sqrt(vector[0]**2 + 
                   vector[1]**2)
     z = vector[2]
-    angle = np.arctan2(z, xy)
-    print(pos_eef, pos_obj, round(angle* 180 / np.pi,2))
+    angle = np.arctan2(xy, z)
+    print(pos_init, pos_final[0:3], round(angle* 180 / np.pi,2))
     return angle
 
 '''
@@ -158,17 +158,19 @@ if __name__ == "__main__":
 #
 #    print()
     
-    print(compute_inclination_discr([-1.5,1.5,1.5], [0, 0, 0], sections))    
+#    print(compute_inclination_discr([-1.5,1.5,1.5], [0, 0, 0], sections))    
     
-#                                   eef       obj
-    print(compute_inclination_discr([0,-.2,.1], [0, 0, 0], sections))
+#                                   init       final
+    print(compute_inclination_discr([0, 0, 0], [1,1,0], sections))
+#    print(compute_inclination_discr([1,.1,.1], [0, 0, 0], sections))    
+#    print(compute_inclination_discr([-1,.1,.1], [0, 0, 0], sections))    
 
-    print(compute_inclination_discr([0.6460916809755015, 
-                                     -0.10103936345923037, 
-                                     0.9544409157082219], 
-                                    [0.6499998645735556, 
-                                     0.09999986267875577, 
-                                     0.8250000037335137], sections))
+#    print(compute_inclination_discr([0.6460916809755015, 
+#                                     -0.10103936345923037, 
+#                                     0.9544409157082219], 
+#                                    [0.6499998645735556, 
+#                                     0.09999986267875577, 
+#                                     0.8250000037335137], sections))
 
 
 #    print()

@@ -11,7 +11,7 @@ discr_hand_coded = False
 discr_random = False
 nb_min_orientation_sections = 8
 nb_min_inclination_sections = 16
-nb_min_distance_sections = 3
+nb_min_distance_sections = 6
 semi_random_trajs = True ## initial trajs using dicretized movs
 
 ''' Global variables '''
@@ -98,9 +98,9 @@ fixed_obj_pos = True ## if false random obj pos during validation phase
 same_move_value = 0.025 
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
 step_length = 0.05 # obj_side/2
-random_max_movs = 10
-inferred_trajectories = 25
-inferred_max_moves = random_max_movs*2
+random_max_movs = 7
+inferred_max_moves = 7
+max_executed_delta = inferred_max_moves
 
 ''' Discretization predefined values'''
 #orientation_values = ['up', 'left-up', 'left', 'left-down', 'down', 
@@ -121,8 +121,8 @@ remote_far_boundary_value = 2 * obj_side
 far_close_boundary_value = 1 * obj_side
 orien_min_angle = -math.pi + math.pi/2
 orien_max_angle = math.pi + math.pi/2
-inclin_min_angle = -math.pi/2
-inclin_max_angle = math.pi/2
+inclin_min_angle = 0 # -math.pi/2
+inclin_max_angle = math.pi #/2
 
 ''' Performance computation '''
 perf_success_value = 4
