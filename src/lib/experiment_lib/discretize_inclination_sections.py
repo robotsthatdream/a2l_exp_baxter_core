@@ -112,9 +112,6 @@ Compute angle of a vector respect to the vertical axis in range [0, Pi/2]
 http://mathworld.wolfram.com/SphericalCoordinates.html
 '''
 def angle_2_ordinate(pos_init, pos_final):
-#    vector = [pos_eef[0] - pos_obj[0],
-#              pos_eef[1] - pos_obj[1], 
-#              pos_eef[2] - pos_obj[2]]
     vector = [pos_final[0] - pos_init[0],
               pos_final[1] - pos_init[1], 
               pos_final[2] - pos_init[2]]
@@ -122,7 +119,7 @@ def angle_2_ordinate(pos_init, pos_final):
                   vector[1]**2)
     z = vector[2]
     angle = np.arctan2(xy, z)
-    print(pos_init, pos_final[0:3], round(angle* 180 / np.pi,2))
+#    print(pos_init[0:3], pos_final[0:3], round(angle* 180 / np.pi,2))
     return angle
 
 '''
@@ -132,8 +129,11 @@ between them
 def compute_inclination_discr(pos_init_vector, pos_final_vector,
                               current_orien):
 
-    return current_orien.compute_section(pos_init_vector, 
-                                         pos_final_vector)
+    round_init_vector = [round(x,sim_param.round_value) for x in pos_init_vector]
+    round_final_vector = [round(x,sim_param.round_value) for x in pos_final_vector]
+
+    return current_orien.compute_section(round_init_vector, 
+                                         round_final_vector)
 
 '''
 Test
@@ -161,7 +161,9 @@ if __name__ == "__main__":
 #    print(compute_inclination_discr([-1.5,1.5,1.5], [0, 0, 0], sections))    
     
 #                                   init       final
-    print(compute_inclination_discr([0, 0, 0], [1,1,0], sections))
+#    print(compute_inclination_discr([0, 0, 0], [0.99999,0.99999,0], sections))
+    print(compute_inclination_discr([0.65, 0.1, -0.14], [0.87, 0.1, 0.12], sections))
+    
 #    print(compute_inclination_discr([1,.1,.1], [0, 0, 0], sections))    
 #    print(compute_inclination_discr([-1,.1,.1], [0, 0, 0], sections))    
 

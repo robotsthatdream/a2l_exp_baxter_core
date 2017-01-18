@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 """
 @author: maestre
@@ -144,6 +146,9 @@ if __name__ == "__main__":
 #    success = ros_services.call_restart_world()
 #    if not success:
 #            print("ERROR - restart_world failed")
+
+    ''' Update number of initial positions in ROS '''
+    ros_services.update_nb_init_pos()
     
     ''' Select obj position during inference ''' 
     model_state = ros_services.call_get_model_state(sim_param.obj_name)

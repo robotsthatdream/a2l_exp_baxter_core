@@ -122,8 +122,11 @@ between them
 def compute_orientation_discr(pos_init_vector, pos_final_vector,
                               current_orien):
 
-    return current_orien.compute_section(pos_init_vector, 
-                                         pos_final_vector)
+    round_init_vector = [round(x,sim_param.round_value) for x in pos_init_vector]
+    round_final_vector = [round(x,sim_param.round_value) for x in pos_final_vector]
+
+    return current_orien.compute_section(round_init_vector, 
+                                         round_final_vector)
 
 '''
 Test
@@ -146,8 +149,15 @@ if __name__ == "__main__":
 #
 #    print()
 #    
-    print(compute_orientation_discr([0.649494, -0.0766049], 
-                                    [0.649216, -0.0441747], sections))
+#    print(compute_orientation_discr([0.649494, -0.0766049], 
+#                                    [0.649216, -0.0441747], sections))
+    
+    print(compute_orientation_discr([0.849977, 0.10001], 
+                                    [0.65, 0.100002], sections))        
+    
+    print(compute_orientation_discr([0.8499794618619384, 0.0999964364189969], 
+                                    [0.6500001290246793, 0.10000004117321026], sections))    
+    
 #    0.649494 -0.0766049 -0.0487123
 
 #    print()

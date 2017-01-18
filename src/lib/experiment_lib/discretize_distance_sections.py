@@ -85,13 +85,13 @@ Compute distance
 '''
 def compute_distance(eef_pos, current_obj_pos,
                      current_dist): ## value of the discretization
-#    discr_sections = Sections(sim_param.obj_side/2, 
-#                              sim_param.circumference_radio,
-#                              current_dist)
-#    return discr_sections.compute_section(eef_pos, current_obj_pos)
-    return current_dist.compute_section(eef_pos, current_obj_pos)
-
-    
+                     
+    round_init_vector = [round(x,sim_param.round_value) for x in eef_pos]
+    round_final_vector = [round(x,sim_param.round_value) for x in current_obj_pos]                     
+                     
+    return current_dist.compute_section(round_init_vector, 
+                                        round_final_vector)
+ 
 '''
 Test
 '''
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 #                          sim_param.nb_min_distance_sections)   
                               
     discr_sections.print_me()
-    print(discr_sections.compute_section([0.804729, 0.100384], [0.649999, 0.100001, 0]))
+    print(discr_sections.compute_section([0.65, 0.100384], [0.649999, 0.100001, 0]))
 
 #    print(compute_distance([.0, 0.67], sim_param.obj_pos[:-1]))
     

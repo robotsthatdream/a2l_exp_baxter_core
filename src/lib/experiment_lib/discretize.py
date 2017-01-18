@@ -32,10 +32,9 @@ def compute_distance_discr():
     else:         
         discr_sections = discr_dist.Sections( sim_param.obj_side/2,
                                       sim_param.circumference_radio,
-                              sim_param.nb_min_distance_sections)                             
-                              
-#        if sim_param.debug:
-        discr_sections.print_me()
+                              sim_param.nb_min_distance_sections)                                                           
+        if sim_param.debug:
+            discr_sections.print_me()
         
         return discr_sections    
     
@@ -48,8 +47,7 @@ def compute_orientation_discr():
     else:
         orien_sections = discr_orien.Sections(sim_param.orien_min_angle, 
                                               sim_param.orien_max_angle,
-                                              sim_param.nb_min_orientation_sections)
-                              
+                                              sim_param.nb_min_orientation_sections)                              
         if sim_param.debug:
             orien_sections.print_me('radians')
         
@@ -65,8 +63,7 @@ def compute_inclination_discr():
         inclin_sections = \
             discr_inclin.Sections(sim_param.inclin_min_angle, 
                                   sim_param.inclin_max_angle,
-                                  sim_param.nb_min_inclination_sections)
-                              
+                                  sim_param.nb_min_inclination_sections)                         
         if sim_param.debug:
             inclin_sections.print_me('radians')
         
@@ -126,6 +123,11 @@ def discretize_trajs(delta_vector,
                          current_delta.get_obj_init().get_z()], ## to remove Z coord
                          current_dist_discr)
                          
+#            print([current_delta.get_effect(), 
+#                   orientation,
+#                   inclination,
+#                   move,
+#                   distance])
             discr_dataset_vector.append([current_delta.get_effect(), 
                                          orientation,
                                          inclination,

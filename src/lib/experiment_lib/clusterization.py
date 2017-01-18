@@ -25,7 +25,7 @@ Main
 if __name__ == '__main__':
     
     ## read trajs
-    filename = '/home/maestre/indigo/baxter_ws/src/adaptive_affordance_learning_actions/src/generated_datasets/directed_dataset.csv'
+    filename = '/home/maestre/indigo/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
     raw_dataset = dataset.read_dataset(filename)
     
     ## extract obj final positions
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             final_obj_pos_vector.append(current_obj_pos)                
     
     ## clusterize them
-    x_means = False
+    x_means = True
     
     ''' X means '''    
     py.figure()

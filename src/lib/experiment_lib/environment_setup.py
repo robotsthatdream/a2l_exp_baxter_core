@@ -18,23 +18,18 @@ import simulation_parameters as sim_param
 '''
 Generate the initial positions of the eef
 '''
-def gen_init_eef(nb_init_pos):
-    nb_init_pos += 2
-    list_radians = [0]
-    tmp = np.linspace(pi/(180.0/360), pi/180, nb_init_pos-1)
-    tmp2 = tmp[:-1].tolist()
-    tmp2.reverse()
-    list_radians = list_radians + tmp2
-
-#    print(list_radians)
+def gen_init_eef(nb_init_pos, 
+                 radius = 1, 
+                 obj_pos = [0,0,sim_param.eef_z_value]):
+    angle = 2*pi/nb_init_pos
+    list_radians = [angle*i for i in range(0,nb_init_pos)]
         
     list_x_axis = []
     list_y_axis = []    
-    for a in list_radians[1:]:
-        list_x_axis.append(cos(a))
-        list_y_axis.append(sin(a))    
-#    list_z_axis = [sim_param.eef_z_value for i in range(len(list_x_axis))]
-    list_z_axis = np.zeros(len(list_x_axis))
+    for a in list_radians:
+        list_x_axis.append(obj_pos[0] + cos(a)*radius)
+        list_y_axis.append(obj_pos[1] + sin(a)*radius)    
+    list_z_axis = [obj_pos[2] for i in range(len(list_x_axis))]
     return list_x_axis, list_y_axis, list_z_axis
 
 '''
@@ -43,8 +38,7 @@ Generate random pos of the object
 def gen_obj_pos():
     obj_pos = [round(random.uniform(-0.5,0.5),2),
                round(random.uniform(-0.5,0.5),2),
-                0]    
-
+                -0.11]
     return obj_pos
 
 '''
@@ -60,5 +54,6 @@ def compute_nb_wps(point_a, point_b):
 Test
 '''
 if __name__== "__main__":
-#    print (gen_init_eef(18))
-    print (compute_nb_wps([0.0, 0.0], [1.0, 1.0]))
+    print (gen_init_eef(4))
+    print (gen_init_eef(4, 0.2, [0.65, 0.1, 0.14]))
+#    print (compute_nb_wps([0.0, 0.0], [1.0, 1.0]))

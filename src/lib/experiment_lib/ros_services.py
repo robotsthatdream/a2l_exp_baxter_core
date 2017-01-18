@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 @author: maestre
@@ -10,6 +11,14 @@ import os
 run_path = os.path.abspath(os.path.join('..', '..'))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
+
+#from gazebo_msgs.srv import GetModelState
+
+'''
+a
+'''
+def update_nb_init_pos():
+    rospy.set_param("nb_init_pos", sim_param.nb_min_init_pos)
 
 '''
 a
@@ -63,10 +72,28 @@ def call_get_model_state(model_name):
         get_model_state = rospy.ServiceProxy(service_name, 
                                              type_name)
         resp = get_model_state(model_name)
+        print(resp)
         return resp.model_state        
     except rospy.ServiceException, e:
         print ("Service call to get_model_state failed: %s"%e) 
         
+
+#def call_get_model_state(model_name):
+#    service_name = 'gazebo/get_model_state'
+#    rospy.wait_for_service(service_name)
+#    try:        
+#        if sim_param.debug_services:
+#           print('--> CALL SERVICE get_model_state')        
+#        gms = rospy.ServiceProxy('/gazebo/get_model_state',GetModelState)
+#        resp = gms(model_name,'base')
+#        print(resp)
+#        return [resp.pose.position.x, 
+#                resp.pose.position.y,
+#                resp.pose.position.z]
+#    except rospy.ServiceException, e:
+#        print ("Service call to get_model_state failed: %s"%e) 
+        
+
 '''
 a
 '''
@@ -100,7 +127,6 @@ def call_trajectory_motion(feedback_frequency, trajectory):
                                                   type_name)
         resp = execute_traj(float(feedback_frequency),
                             trajectory)
-        time.sleep(2)
         return resp.success        
     except rospy.ServiceException, e:
         print ("Service call to execute_delta_motion failed: %s"%e) 
@@ -126,7 +152,7 @@ def call_move_to_initial_position(nb_initial_pos):
 '''
 a
 '''
-def call_restart_world():
+def call_restart_world(element):
     service_name = 'a2l/restart_world'
     rospy.wait_for_service(service_name)
     try:        
@@ -135,16 +161,13 @@ def call_restart_world():
         type_name = Restartworld
         restart_world = rospy.ServiceProxy(service_name, 
                                              type_name)
-        resp = restart_world("robot")
-        time.sleep(1)
-        resp = restart_world("setup")      
-        time.sleep(1)
+        resp = restart_world(element)      
         return resp.success        
     except rospy.ServiceException, e:
         print ("Service call to restart_world failed: %s"%e)    
         
 if __name__  == "__main__":
-#    print("cube :", call_get_model_state("cube"))
+    print("cube :", call_get_model_state("cube"))
     
 #    print("create directed dataset", 
 #          call_generate_directed_dataset('directed'))
@@ -161,8 +184,8 @@ if __name__  == "__main__":
 #    print("call_move_to_initial_position left", 
 #          call_move_to_initial_position(1))
     
-    print("call_trajectory_motion", 
-           call_trajectory_motion(2, [0.65,0.2,0.1,0.5,0,0,0.7,0.3,0.2]))    
+#    print("call_trajectory_motion", 
+#           call_trajectory_motion(2, [0.65,0.2,0.1,0.5,0,0,0.7,0.3,0.2]))    
     
    
 

@@ -7,19 +7,22 @@ import math
 
 ''' Main parameters '''
 nb_min_init_pos = 4 ## better if mod 4
+nb_min_orientation_sections = 8
+nb_min_inclination_sections = 4
+nb_min_distance_sections = 3
+exec_traj = False
+
+semi_random_trajs = True ## initial trajs using dicretized movs
 discr_hand_coded = False
 discr_random = False
-nb_min_orientation_sections = 8
-nb_min_inclination_sections = 16
-nb_min_distance_sections = 6
-semi_random_trajs = True ## initial trajs using dicretized movs
+
 
 ''' Global variables '''
 print_time = False ## print elapsed time for some functions
 plot_dataset_stats = True ## plot the content of the discretized dataset
 new_dataset = False ## True to generate a new dataset, False to use current one
 dpi = 80 
-round_value = 5
+round_value = 2
 
 print_prob_table_values = False ## print the CPTs values
 print_unknown_affordances = False ## print name of unknown affordances
@@ -42,8 +45,8 @@ distance_param = True
 
 ''' Scores '''
 score_likelihood = False
-score_bic = False
-score_aic = True
+score_bic = True
+score_aic = False
 score_k2 = False
 
 ''' Stats '''
@@ -86,7 +89,7 @@ inferred_traj = []
 
 ''' Experiment set-up values '''
 #obj_pos = [0,0,0]
-obj_side = 0.06
+obj_side = 0.1
 obj_displacement = 0.3
 circumference_radio = 0.2
 colormap_values = ['red','yellow','green','black']
@@ -99,23 +102,27 @@ same_move_value = 0.025
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
 step_length = 0.05 # obj_side/2
 random_max_movs = 7
-inferred_max_moves = 7
-max_executed_delta = inferred_max_moves
+inferred_max_moves = 40
+max_nb_executed_deltas = inferred_max_moves
 
 ''' Discretization predefined values'''
 #orientation_values = ['up', 'left-up', 'left', 'left-down', 'down', 
 #                      'right-down', 'right', 'right-up']
 #distance_values = ['close', 'far', 'remote']
 
-move_values = ['far', 'far_left', 'far_left_up', 'far_left_down',
-               'far', 'far_right', 'far_right_up', 'far_right_down',
-               'close', 'close_left', 'close_left_up', 'close_left_down',
-               'close', 'close_right', 'close_right_up', 'close_right_down',
+move_values = ['far', 
+               'far_left', 'far_left_up', 'far_left_down',
+               'far_right', 'far_right_up', 'far_right_down',
+               'far_down', 'far_up',               
+               'close', 
+               'close_left', 'close_left_up', 'close_left_down',
+               'close_right', 'close_right_up', 'close_right_down',
+               'close_down', 'close_up',               
                'left', 'left_up', 'left_down',
                'right', 'right_up', 'right_down',
                'up',
                'down']               
-effect_values = ['left', 'right', 'down', 'up']
+effect_values = ['left', 'right', 'close', 'far']
 
 remote_far_boundary_value = 2 * obj_side
 far_close_boundary_value = 1 * obj_side

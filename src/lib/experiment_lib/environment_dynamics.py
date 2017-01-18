@@ -120,22 +120,38 @@ def check_obj_moved(box_pos,
                     _wp_next):
                         
 #    box_pos = sim_param.obj_pos
-    box_side = sim_param.obj_side        
+    box_side = sim_param.obj_side # * 2   
     
     ## object corners
-    l_top_left = Point(box_pos[0] - box_side/2, 
-                       box_pos[1] + box_side/2, 
-                        box_pos[2])
-    l_top_right = Point(box_pos[0] + box_side/2, 
-                        box_pos[1] + box_side/2, 
-                        box_pos[2])
+    l_bottom_front_right = Point(box_pos[0] + box_side/2, 
+                                 box_pos[1] - box_side/2, 
+                                 box_pos[2] - box_side/2)
+#    print('l_bottom_front_right', l_bottom_front_right.x,
+#                                  l_bottom_front_right.y,
+#                                  l_bottom_front_right.z,)
+    
+    l_bottom_front_left = Point(box_pos[0] + box_side/2, 
+                                 box_pos[1] + box_side/2, 
+                                 box_pos[2] - box_side/2)                                 
+    l_bottom_back_right = Point(box_pos[0] - box_side/2, 
+                                 box_pos[1] - box_side/2, 
+                                 box_pos[2] - box_side/2)
+    l_bottom_back_left = Point(box_pos[0] - box_side/2, 
+                                 box_pos[1] + box_side/2, 
+                                 box_pos[2] - box_side/2)                                 
 
-    l_bottom_left = Point(box_pos[0] - box_side/2, 
-                          box_pos[1] - box_side/2, 
-                            box_pos[2])
-    l_bottom_right = Point(box_pos[0] + box_side/2, 
-                           box_pos[1] - box_side/2, 
-                            box_pos[2])
+    l_top_front_right = Point(box_pos[0] + box_side/2, 
+                                 box_pos[1] - box_side/2, 
+                                 box_pos[2] + box_side/2)
+    l_top_front_left = Point(box_pos[0] + box_side/2, 
+                                 box_pos[1] + box_side/2, 
+                                 box_pos[2] + box_side/2)                                 
+    l_top_back_right = Point(box_pos[0] - box_side/2, 
+                                 box_pos[1] - box_side/2, 
+                                 box_pos[2] + box_side/2)
+    l_top_back_left = Point(box_pos[0] - box_side/2, 
+                                 box_pos[1] + box_side/2, 
+                                 box_pos[2] + box_side/2)
     
     obj_moved = False
     i = 0
@@ -148,15 +164,48 @@ def check_obj_moved(box_pos,
             wp_next = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
         else:
             wp = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
-            wp_next = Point(_wp_next[0], _wp_next[1], _wp_next[2])            
+            wp_next = Point(_wp_next[0], _wp_next[1], _wp_next[2])
+#        print('EEF TMP POS', wp_next.x, wp_next.y, wp_next.z)
 
-        if doIntersect(wp, wp_next, l_top_right, l_bottom_right) or \
-           doIntersect(wp, wp_next, l_top_left, l_bottom_left) or \
-           doIntersect(wp, wp_next, l_top_left, l_top_right) or \
-           doIntersect(wp, wp_next, l_bottom_left, l_bottom_right):
-           obj_moved = True
+#        if doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
+#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_back_right) or \
+#           doIntersect(wp, wp_next, l_bottom_front_right, l_top_front_right) or \
+#           doIntersect(wp, wp_next, l_bottom_front_left, l_bottom_back_left) or \
+#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
+#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
+#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
+#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left):
+#           obj_moved = True
+
+        if wp_next.x <= l_bottom_front_right.x and \
+            wp_next.y >= l_bottom_front_right.y and \
+            wp_next.z >= l_bottom_front_right.z and \
+            wp_next.x <= l_bottom_front_left.x and \
+            wp_next.y <= l_bottom_front_left.y and \
+            wp_next.z >= l_bottom_front_left.z and \
+            wp_next.x >= l_bottom_back_right.x and \
+            wp_next.y >= l_bottom_back_right.y and \
+            wp_next.z >= l_bottom_back_right.z and \
+            wp_next.x >= l_bottom_back_left.x and \
+            wp_next.y <= l_bottom_back_left.y and \
+            wp_next.z >= l_bottom_back_left.z and \
+            wp_next.x <= l_top_front_right.x and \
+            wp_next.y >= l_top_front_right.y and \
+            wp_next.z <= l_top_front_right.z and \
+            wp_next.x <= l_top_front_left.x and \
+            wp_next.y <= l_top_front_left.y and \
+            wp_next.z <= l_top_front_left.z and \
+            wp_next.x >= l_top_back_right.x and \
+            wp_next.y >= l_top_back_right.y and \
+            wp_next.z <= l_top_back_right.z and \
+            wp_next.x >= l_top_back_left.x and \
+            wp_next.y <= l_top_back_left.y and \
+            wp_next.z <= l_top_back_left.z:
+                obj_moved = True
         i += 1
     return obj_moved
+    
+    
 
 #'''
 #Given a effect return the related final position
@@ -203,9 +252,9 @@ def identify_effect_3d(initial_obj_pos, final_obj_pos):
     
     if delta_x > delta_y: ## up or down
         if final_obj_pos[0] > initial_obj_pos[0] :
-            return 'up'
+            return 'far'
         elif final_obj_pos[0] < initial_obj_pos[0] :    
-            return 'down'
+            return 'close'
     else:
         if final_obj_pos[1] > initial_obj_pos[1] :
             return 'left'
@@ -219,12 +268,15 @@ if __name__ == '__main__':
 #    print(identify_effect([-0.3,0,0]))
 #    print(identify_effect_3d([0,0,0], [-.2,-0.3,0]))
 
-    print(check_obj_moved([0,0,0], [0,0.5,0],[0,0.01,0])) # to the bottom
-    print(check_obj_moved([0,0,0], [0,-0.5,0],[0,-0.01,0])) # up
-    print(check_obj_moved([0,0,0], [0.5,0,0],[0.01,0,0])) # to the left
-    print(check_obj_moved([0,0,0], [-0.5,-0,0],[-0.01,0,0])) # to the right
-    
-    print(check_obj_moved([0,0,0], [-0.2,0,0],[0,-0.2,0])) # to the right
-    print(check_obj_moved([0,0,0], [0.2,0,0],[0,-0.2,0])) # to the left
-    print(check_obj_moved([0,0,0], [0.2,0,0],[0,1,0])) # to the left
-    print(check_obj_moved([0,0,0], [-0.1,-1,0],[0.1,10,0])) # up
+#    print(check_obj_moved([0,0,0], [0,0.5,0],[0,0.01,0])) # to the bottom
+#    print(check_obj_moved([0,0,0], [0,-0.5,0],[0,-0.01,0])) # up
+#    print(check_obj_moved([0,0,0], [0.5,0,0],[0.01,0,0])) # to the left
+#    print(check_obj_moved([0,0,0], [-0.5,-0,0],[-0.01,0,0])) # to the right
+#    
+#    print(check_obj_moved([0,0,0], [-0.2,0,0],[0,-0.2,0])) # to the right
+#    print(check_obj_moved([0,0,0], [0.2,0,0],[0,-0.2,0])) # to the left
+#    print(check_obj_moved([0,0,0], [0.2,0,0],[0,1,0])) # to the left
+#    print(check_obj_moved([0,0,0], [-0.1,-1,0],[0.1,10,0])) # up
+
+    print(check_obj_moved([0.65, 0.1, -0.11], 
+                          [0.7, 0.1, -0.11],[0.7, 0.15, -0.11]))

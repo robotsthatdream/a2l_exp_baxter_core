@@ -23,6 +23,8 @@ class Orientation_dist_values:
     def __init__(self):
         self.orient_vector = \
             ['orien_'+str(x) for x in range(sim_param.nb_min_orientation_sections)]
+        self.inclin_vector = \
+            ['inclin_'+str(x) for x in range(sim_param.nb_min_inclination_sections)]
         self.dist_vector = \
             ['dist_'+str(x) for x in range(sim_param.nb_min_distance_sections)]
         self.values = self.create_values_dict()
@@ -32,31 +34,33 @@ class Orientation_dist_values:
             
         values_dict = OrderedDict()
         for orien in self.orient_vector:
-            for dist in self.dist_vector:
-                move_dict = OrderedDict()        
-                for m in sim_param.move_values:
-                    move_dict[m] = 0                                
-                values_dict[orien, dist] = move_dict
+            for inclin in self.inclin_vector:
+                for dist in self.dist_vector:
+                    move_dict = OrderedDict()        
+                    for m in sim_param.move_values:
+                        move_dict[m] = 0                                
+                    values_dict[orien, inclin, dist] = move_dict
         return values_dict
                 
     ''' Add new move value for a specific (orien, dist) '''
-    def add_value(self, orientation, move, dist):
-        current_move_dict = self.values[orientation, dist]
+    def add_value(self, orientation, inclin, move, dist):
+        current_move_dict = self.values[orientation, inclin, dist]
         move_value = current_move_dict[move]
         current_move_dict[move] = move_value + 1
     
     ''' Print moves available for each orientation '''
     def print_me(self):    
         for orien in self.orient_vector:
-            for dist in self.dist_vector:
-                print('\n' + str(orien), str(dist))
-                current_move_dict = self.values[orien, dist]
-                for tmp_d_key, tmp_d_value in current_move_dict.items():
-                    print('', tmp_d_key, "-->", tmp_d_value)
+            for inclin in self.inclin_vector:
+                for dist in self.dist_vector:
+                    print('\n' + str(orien), str(inclin), str(dist))
+                    current_move_dict = self.values[orien, inclin, dist]
+                    for tmp_d_key, tmp_d_value in current_move_dict.items():
+                        print('', tmp_d_key, "-->", tmp_d_value)
 
     ''' Get best move for an (orient, dist) '''
-    def get_move_repetitions(self, orien, dist):
-        current_move_dict = self.values[orien, dist]
+    def get_move_repetitions(self, orien, inclin, dist):
+        current_move_dict = self.values[orien, inclin, dist]
         best_move = \
             max(current_move_dict.iteritems(), key=operator.itemgetter(1))[0]
         best_move_value = current_move_dict[best_move]        
@@ -66,46 +70,48 @@ class Orientation_dist_values:
     def get_best_effect_move_value(self):        
         best_effect_move_value = 0
         for curr_orien in self.orient_vector:
-            for curr_dist in self.dist_vector:
-                tmp_max_move, tmp_max_move_value = \
-                    self.get_move_repetitions(curr_orien,
-                                              curr_dist)
-                if tmp_max_move_value > best_effect_move_value:
-                    best_effect_move_value = tmp_max_move_value
+            for curr_inclin in self.inclin_vector:
+                for curr_dist in self.dist_vector:
+                    tmp_max_move, tmp_max_move_value = \
+                        self.get_move_repetitions(curr_orien,
+                                                  curr_inclin,
+                                                  curr_dist)
+                    if tmp_max_move_value > best_effect_move_value:
+                        best_effect_move_value = tmp_max_move_value
         return best_effect_move_value
 '''
 Effects available in the experiment
 '''
 class Effect_values:
     def __init__(self):
-        self.up = Orientation_dist_values()
+        self.far = Orientation_dist_values()
         self.left = Orientation_dist_values()
-        self.down = Orientation_dist_values()
+        self.close = Orientation_dist_values()
         self.right = Orientation_dist_values()        
     
     ''' Add new (orientation,move) for a specific goal ''' 
-    def add_effect_value(self, effect, orien, move, dist=None):
-        if effect == 'up':
-            self.up.add_value(orien, move, dist)        
+    def add_effect_value(self, effect, orien, inclin, move, dist=None):
+        if effect == 'far':
+            self.far.add_value(orien, inclin, move, dist)        
         elif effect == 'left':
-            self.left.add_value(orien, move, dist)
-        elif effect == 'down':
-            self.down.add_value(orien, move, dist)
+            self.left.add_value(orien, inclin, move, dist)
+        elif effect == 'close':
+            self.close.add_value(orien, inclin, move, dist)
         elif effect == 'right':
-            self.right.add_value(orien, move, dist)
+            self.right.add_value(orien, inclin, move, dist)
         else:
             print('add_effect_value -', effect, 'not found')
 
     ''' Print (orientation,move) for each effect '''
     def print_me(self):        
         pos = 0
-        for g in [self.up, self.left, self.down, self.right]:
+        for g in [self.far, self.left, self.close, self.right]:
             if pos == 0:
-                print ('\nUP\n')     
+                print ('\nFAR\n')     
             if pos == 1:
                 print ('\nLEFT\n')
             elif pos == 2:
-                print ('\nDOWN\n')
+                print ('\nCLOSE\n')
             elif pos == 3:
                 print ('\nRIGHT\n')           
             pos += 1
@@ -115,7 +121,7 @@ class Effect_values:
     ''' Get best move value for any (effect, orient, dist) '''
     def get_best_global_move_value(self):
         best_global_move_value = 0
-        for curr_effect in [self.up, self.down, self.left, self.right]:
+        for curr_effect in [self.far, self.close, self.left, self.right]:
             curr_best_move = curr_effect.get_best_effect_move_value()
             if curr_best_move > best_global_move_value:
                 best_global_move_value = curr_best_move
@@ -148,22 +154,22 @@ class Effect_values:
     
     ''' Given a effect return a symbol '''
     def simplify_effect(self,effect):
-        if effect == 'up':
-            return 'u'
-        elif effect == 'down':
-            return 'd'
+        if effect == 'far':
+            return 'f'
+        elif effect == 'close':
+            return 'c'
         elif effect == 'left':
             return 'l'
         elif effect == 'right':
             return 'r'
-        elif effect == 'right-down':
-            return 'r-d'
-        elif effect == 'right-up':
-            return 'r-u'
-        elif effect == 'left-down':
-            return 'l-d'
-        elif effect == 'left-up':
-            return 'l-u'
+        elif effect == 'right-close':
+            return 'r-c'
+        elif effect == 'right-far':
+            return 'r-f'
+        elif effect == 'left-close':
+            return 'l-c'
+        elif effect == 'left-far':
+            return 'l-f'
         else:
             print('ERROR - simplify_effect', effect, 'not known')
             sys.exit()
@@ -174,6 +180,8 @@ class Effect_values:
         ## Create matrix to fill
         orient_vector = \
             ['orien_'+str(x) for x in range(sim_param.nb_min_orientation_sections)]
+        inclin_vector = \
+            ['inclin_'+str(x) for x in range(sim_param.nb_min_inclination_sections)]            
         dist_vector = \
             ['dist_'+str(x) for x in range(sim_param.nb_min_distance_sections)]
         tmp_array = []
@@ -185,27 +193,29 @@ class Effect_values:
         stats_matrix_move_value = np.zeros(shape=(len(orient_vector),
                                        len(dist_vector)))                                               
         ## Select current effect list
-        if effect == 'up':
-            current_effect = self.up
+        if effect == 'far':
+            current_effect = self.far
         elif effect == 'left':
             current_effect = self.left 
-        elif effect == 'down':
-            current_effect = self.down
+        elif effect == 'close':
+            current_effect = self.close
         elif effect == 'right':
             current_effect = self.right 
         
         ## For each possible (orien, dist) plot the move with highest value
         for current_orien in range(len(orient_vector)):
-            for current_dist in range(len(dist_vector)):
-            
-                best_move, best_move_value = \
-                    current_effect.get_move_repetitions('orien_'+str(current_orien),
-                                                        'dist_'+str(current_dist))
-                ## get the available number of each movement
-                stats_matrix_move [current_orien, current_dist] = \
-                    best_move
-                stats_matrix_move_value [current_orien, current_dist] = \
-                    (float(best_move_value)/v_max)*100                            
+            for current_inclin in range(len(inclin_vector)):
+                for current_dist in range(len(dist_vector)):
+                
+                    best_move, best_move_value = \
+                        current_effect.get_move_repetitions('orien_'+str(current_orien),
+                                                            'inclin_'+str(current_inclin),
+                                                            'dist_'+str(current_dist))
+                    ## get the available number of each movement
+                    stats_matrix_move [current_orien, current_dist] = \
+                        best_move
+                    stats_matrix_move_value [current_orien, current_dist] = \
+                        (float(best_move_value)/v_max)*100                            
         
         ## heatmap
         heatmap = ax.pcolor(stats_matrix_move_value, 
@@ -248,11 +258,11 @@ def plot_dataset_stats(filename):
     v_max = len(lines)/10
     for line in lines[1:]:
         if not sim_param.distance_param:
-            effect, orien, move = line[:-1].split(',')            
-            dataset_values.add_effect_value(effect, orien, move)
+            effect, orien, inclin, move = line[:-1].split(',')            
+            dataset_values.add_effect_value(effect, orien, inclin, move)
         else:
-            effect, orien, move, dist = line[:-1].split(',')
-            dataset_values.add_effect_value(effect, orien, move, dist)
+            effect, orien, inclin, move, dist = line[:-1].split(',')
+            dataset_values.add_effect_value(effect, orien, inclin, move, dist)
 
 #    dataset_values.print_me()
     dataset_values.print_stats(v_max)  
@@ -261,6 +271,6 @@ def plot_dataset_stats(filename):
 Test
 '''
 if __name__ == '__main__':
-    filename = '/home/maestre/dream/simple_dataset_exp/generated_files/random_discr_wps.csv'
+    filename = '/home/maestre/git/a2l_exp_baxter_core/src/generated_files/directed_discr_wps.csv'
     plot_dataset_stats(filename)
 
