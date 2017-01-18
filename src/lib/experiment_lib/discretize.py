@@ -11,7 +11,7 @@ import os, sys
 run_path = os.path.abspath(os.path.join('..', '..'))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
-#import math
+import math
 
 import discretize_move as discr_move
 if sim_param.discr_hand_coded:
@@ -44,7 +44,7 @@ Compute orientation discretization
 def compute_orientation_discr():
     if sim_param.discr_hand_coded:
         return None
-    else:
+    else:        
         orien_sections = discr_orien.Sections(sim_param.orien_min_angle, 
                                               sim_param.orien_max_angle,
                                               sim_param.nb_min_orientation_sections)                              

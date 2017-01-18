@@ -126,8 +126,10 @@ effect_values = ['left', 'right', 'close', 'far']
 
 remote_far_boundary_value = 2 * obj_side
 far_close_boundary_value = 1 * obj_side
-orien_min_angle = -math.pi + math.pi/2
-orien_max_angle = math.pi + math.pi/2
+
+orien_offset = (2*math.pi/nb_min_orientation_sections)/2
+orien_min_angle = -math.pi + math.pi/2 + orien_offset
+orien_max_angle = math.pi + math.pi/2 + orien_offset
 inclin_min_angle = 0 # -math.pi/2
 inclin_max_angle = math.pi #/2
 

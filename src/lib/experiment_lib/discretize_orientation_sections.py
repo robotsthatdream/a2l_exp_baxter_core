@@ -19,10 +19,10 @@ import simulation_parameters as sim_param
 
 class Sections:
 
-    def __init__(self, min_angle, max_angle, nb_sections):
+    def __init__(self, min_angle, max_angle, nb_sections):        
         self.section_name = 'orien_'
         self.orien_min_angle = min_angle
-        self.orien_max_angle = max_angle        
+        self.orien_max_angle = max_angle
         
         ## create sections
         self.raw_sections = np.linspace(min_angle, max_angle, nb_sections + 1)
@@ -105,7 +105,7 @@ class Sections:
     ''' Compute the section of a given pos '''
     def compute_section(self,pos_init, pos_final):
         angle = angle_2_abscise(pos_init, pos_final)
-        return self.get_section_angle(angle)
+        return self.get_section_angle(angle + sim_param.orien_offset)
 
 '''
 Compute angle of a vector respect to the horizontal axis in range [-Pi, Pi]
@@ -137,7 +137,7 @@ if __name__ == "__main__":
                         sim_param.orien_max_angle, 
                         sim_param.nb_min_orientation_sections)    
     
-    angle_format = 'radians'
+    angle_format = 'degrees'
     sections.print_me(angle_format)
     
 #    print(sections.get_section_angle(sim_param.max_angle))
