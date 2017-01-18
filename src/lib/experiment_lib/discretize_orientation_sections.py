@@ -26,14 +26,18 @@ class Sections:
         
         ## create sections
         self.raw_sections = np.linspace(min_angle, max_angle, nb_sections + 1)
+        self.raw_sections = [round (v, sim_param.round_value) 
+                             for v in self.raw_sections]
+        
+#        print(self.orien_min_angle, self.orien_max_angle, self.raw_sections)
+        
         ## if some need to be removed
         if sim_param.discr_random:
             nb_random_values = len(self.raw_sections)//nb_sections
             for v in range(nb_random_values):
                 to_remove = random.randint(1,len(self.raw_sections)-2)
                 self.raw_sections = np.delete(self.raw_sections, to_remove)        
-        self.raw_sections = [round (v, sim_param.round_value) 
-                        for v in self.raw_sections]
+        
         ## Label degree sections
         self.sections_degrees = collections.OrderedDict()
         pos = 0
@@ -75,27 +79,44 @@ class Sections:
             print('ERROR - print_me - angle format unknown')
             sys.exit()
         
+        pos = 0
         for tmp_d_key, tmp_d_value in tmp_list.items():
-            print(tmp_d_key, "-->", tmp_d_value)
+            if pos == len(self.sections_degrees)-1:
+                tmp_d_value[1] = math.degrees(self.orien_max_angle - sim_param.orien_offset)
+#            print(tmp_d_key, "-->", tmp_d_value)
+            if angle_format == 'radians':
+                if pos == len(self.sections_degrees)-1:
+                    print(tmp_d_key, "-->", [self.orien_min_angle - sim_param.orien_offset,
+                                             self.orien_min_angle])
+            else:
+                if pos == len(self.sections_degrees)-1:
+                    print(tmp_d_key, "-->", [math.degrees(self.orien_min_angle - sim_param.orien_offset),
+                                             math.degrees(self.orien_min_angle)])
+                
+            pos += 1
 
     ''' Get the name of the discretized section for an angle '''
     def get_section_angle(self,current_angle):            
 
-        if (current_angle < self.orien_min_angle or 
-            current_angle > self.orien_max_angle):            
+        if (current_angle < self.orien_min_angle - sim_param.orien_offset or 
+            current_angle > self.orien_max_angle - sim_param.orien_offset):            
             print("ERROR - get_section_angle : The value", current_angle, \
-                    "is out of the range [", self.orien_min_angle, ", ", \
-                    self.orien_max_angle, "]")
-            sys.exit() 
+                    "is out of the range [", 
+                    self.orien_min_angle - sim_param.orien_offset, ", ", \
+                    self.orien_max_angle - sim_param.orien_offset, "]")
+            sys.exit()
 
         radian_values = self.sections_radians.values()
 
-        if current_angle == self.orien_max_angle:
+        if current_angle == self.orien_max_angle - sim_param.orien_offset:
             return self.section_name+str(len(radian_values)-1)
-        elif current_angle == self.orien_min_angle:
-            return self.section_name+str(0)
+        elif current_angle == self.orien_min_angle - sim_param.orien_offset:
+            return self.section_name+str(0)        
+        elif current_angle >= self.orien_min_angle - sim_param.orien_offset and \
+            current_angle < self.orien_min_angle:
+            return self.section_name+str(len(radian_values)-1)    
         
-        current_angle = round(current_angle, sim_param.round_value)
+#        current_angle = round(current_angle, sim_param.round_value)
         for pos in range(0,len(radian_values)):
             if  current_angle >= radian_values[pos][0] \
                 and \
@@ -104,8 +125,8 @@ class Sections:
 
     ''' Compute the section of a given pos '''
     def compute_section(self,pos_init, pos_final):
-        angle = angle_2_abscise(pos_init, pos_final)
-        return self.get_section_angle(angle + sim_param.orien_offset)
+        angle = round(angle_2_abscise(pos_init, pos_final), sim_param.round_value)
+        return self.get_section_angle(angle)
 
 '''
 Compute angle of a vector respect to the horizontal axis in range [-Pi, Pi]
@@ -113,7 +134,8 @@ Compute angle of a vector respect to the horizontal axis in range [-Pi, Pi]
 def angle_2_abscise(pos_init, pos_final):
     angle = math.atan2(pos_init[1] - pos_final[1], 
                        pos_init[0] - pos_final[0])
-    return angle + math.pi/2
+#    print(math.degrees(angle))
+    return angle # + math.pi/2
 
 '''
 Given two positions return the orientation of the discretized vector 
@@ -151,12 +173,15 @@ if __name__ == "__main__":
 #    
 #    print(compute_orientation_discr([0.649494, -0.0766049], 
 #                                    [0.649216, -0.0441747], sections))
-    
-    print(compute_orientation_discr([0.849977, 0.10001], 
-                                    [0.65, 0.100002], sections))        
-    
-    print(compute_orientation_discr([0.8499794618619384, 0.0999964364189969], 
-                                    [0.6500001290246793, 0.10000004117321026], sections))    
+          
+    print(compute_orientation_discr([0,0], ## up
+                                    [0,1], sections))    
+    print(compute_orientation_discr([0,0], ## left
+                                    [-1,0], sections))                                        
+    print(compute_orientation_discr([0,0], ## down
+                                    [0,-1], sections))    
+    print(compute_orientation_discr([0,0], ## right
+                                    [1,0], sections))                                                                            
     
 #    0.649494 -0.0766049 -0.0487123
 

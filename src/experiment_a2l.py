@@ -25,7 +25,6 @@ Run basic learning
 '''
 def basic_learning_dataset_size(dataset_type_vector,
                                 learn_algo_vector,
-#                                current_obj_pos,
                                 current_results_folder):
           
     ## Create discretizations

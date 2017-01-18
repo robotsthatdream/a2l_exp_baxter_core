@@ -7,7 +7,7 @@ import math
 
 ''' Main parameters '''
 nb_min_init_pos = 4 ## better if mod 4
-nb_min_orientation_sections = 8
+nb_min_orientation_sections = 16
 nb_min_inclination_sections = 4
 nb_min_distance_sections = 3
 exec_traj = False
@@ -128,8 +128,10 @@ remote_far_boundary_value = 2 * obj_side
 far_close_boundary_value = 1 * obj_side
 
 orien_offset = (2*math.pi/nb_min_orientation_sections)/2
-orien_min_angle = -math.pi + math.pi/2 + orien_offset
-orien_max_angle = math.pi + math.pi/2 + orien_offset
+#orien_min_angle = -math.pi + math.pi/2  + orien_offset
+#orien_max_angle = math.pi + math.pi/2 + orien_offset
+orien_min_angle = -math.pi + orien_offset
+orien_max_angle = math.pi + orien_offset
 inclin_min_angle = 0 # -math.pi/2
 inclin_max_angle = math.pi #/2
 
