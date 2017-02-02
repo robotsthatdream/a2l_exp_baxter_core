@@ -190,14 +190,17 @@ def check_obj_moved(box_pos,
         i += 1
     return obj_moved
     
-def compute_obj_pos(box_pos,
+def compute_obj_pos(obj_pos,
                     wp, 
                     wp_final):
 
-    obj_moved = check_obj_moved(box_pos,
+    obj_moved = check_obj_moved(obj_pos,
                                 wp, 
                                 wp_final)
-    new_box_pos = [pos for pos in box_pos]
+    new_box_pos = [pos for pos in obj_pos]
+
+    z_max_value_box = obj_pos[2] + sim_param.obj_side/2  
+    
     if obj_moved:
         
 #        print('EEF TMP POS', wp[0], wp[1], wp[2])
@@ -205,13 +208,13 @@ def compute_obj_pos(box_pos,
         wp = [round(pos, sim_param.round_value) for pos in wp]
         wp_final = [round(pos, sim_param.round_value) for pos in wp_final]
         
-        if wp[0] < wp_final[0]: ## far
+        if wp[0] < wp_final[0] and wp[2] < z_max_value_box: ## far
             new_box_pos[0] += sim_param.obj_displacement
-        elif wp[0] > wp_final[0]: ## close
+        elif wp[0] > wp_final[0] and wp[2] < z_max_value_box: ## close
             new_box_pos[0] -= sim_param.obj_displacement
-        elif wp[1] > wp_final[1]: ## left
+        elif wp[1] > wp_final[1] and wp[2] < z_max_value_box: ## left
             new_box_pos[1] -= sim_param.obj_displacement
-        elif wp[1] < wp_final[1]: ## right
+        elif wp[1] < wp_final[1] and wp[2] < z_max_value_box: ## right
             new_box_pos[1] += sim_param.obj_displacement
     
     new_box_pos = [round(pos,sim_param.round_value) for pos in new_box_pos]

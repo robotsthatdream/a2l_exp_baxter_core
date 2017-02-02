@@ -437,13 +437,12 @@ def infere_traj(bn, ie,
                 expected_effect, 
                 current_orien, current_inclin, current_dist):
 
-    if sim_param.debug_infer:
-        print('\n\n\n////////////////////////////////')
-        print('////////////////////////////////')
-        print('////////////////////////////////')
-        print('////////////////////////////////')
-        print('NEW TRAJ for init_pos', curr_init_pos,
-              'effect', expected_effect.upper())
+    print('\n\n\n////////////////////////////////////////////////////////////////')
+    print('////////////////////////////////////////////////////////////////')
+    print('////////////////////////////////////////////////////////////////')
+    print('////////////////////////////////////////////////////////////////')
+    print('NEW TRAJ for init_pos', curr_init_pos,
+          'effect', expected_effect.upper())
 
     ''' Move eef to initial position and get position '''
     res_init_pos = False
@@ -474,8 +473,8 @@ def infere_traj(bn, ie,
     inf_dicr = []
     delta_class_vector = []
     traj_res = ''
-#    expected_effect = '' 
-#    obtained_effect = ''
+    obtained_effect = ''
+    obj_moved = False
     
     nb_executed_deltas = 0
     execution_active = True ## still trying to touch object
@@ -487,95 +486,101 @@ def infere_traj(bn, ie,
 #    print('initial_obj_pos :', initial_obj_pos)
     initial_obj_pos = [round(pos, sim_param.round_value) for pos in initial_obj_pos[0:3]]
 #    print('initial_obj_pos :', initial_obj_pos)    
+
+    traj_tries = 0
+    while not obj_moved or expected_effect != obtained_effect and \
+          traj_tries < sim_param.max_inferred_traj_tries:
     
-    ''' Simulate trajectory '''
-    traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
-                                   eef_pos,
-                                   initial_obj_pos,
-                                   expected_effect, 
-                                   current_orien,
-                                   current_inclin,
-                                   current_dist)
-
-    ''' Plot simulated traj '''
-    plot_traj_3d(nb_init_pos,
-                 traj,
-                 initial_obj_pos,
-                 curr_init_pos,
-                 expected_effect) 
-                                   
-    ''' Identify effect '''
-    print('positions', initial_obj_pos, final_obj_pos)                                    
-    obtained_effect = env.identify_effect(initial_obj_pos,
-                                          final_obj_pos)                                          
-    print('expected_effect: ------------->', expected_effect.upper())
-    print('obtained_effect: ------------->', obtained_effect.upper())
-
-    ''' Repeat if bad trajectory '''
-    ## if not contact produced or wrong effect, create more accurate traj
-    accuracy_value = 1                                                                                                 
-#    if not moved:
-    while not obj_moved and accuracy_value <= 3:
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print('REPEATING TRAJ! OBJ NOT MOVED')
-        
-#        raw_input("PRESS KEY TO CONTINUE")
-        accuracy_value += 1
+        ''' Simulate trajectory '''
         traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
-                                                   eef_pos,
-                                                   initial_obj_pos,
-                                                   expected_effect, 
-                                                   current_orien,
-                                                   current_inclin,
-                                                   current_dist,
-                                                   accuracy_value) ## accurate level
+                                       eef_pos,
+                                       initial_obj_pos,
+                                       expected_effect, 
+                                       current_orien,
+                                       current_inclin,
+                                       current_dist)
+    
         ''' Plot simulated traj '''
         plot_traj_3d(nb_init_pos,
                      traj,
                      initial_obj_pos,
                      curr_init_pos,
-                     expected_effect)
-                     
-        ''' Identify effect '''
-        print('positions', initial_obj_pos, final_obj_pos)                                    
-        obtained_effect = env.identify_effect(initial_obj_pos,
-                                              final_obj_pos)
-        print('expected_effect: ------------->', expected_effect.upper())
-        print('obtained_effect:', initial_obj_pos, final_obj_pos,
-                                  '------------->', obtained_effect.upper())
-        accuracy_value += 1                                                  
-                                                   
-#    elif expected_effect != obtained_effect:
-    while expected_effect != obtained_effect and accuracy_value <= 3:
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print('REPEATING TRAJ! WRONG EFFECT', obtained_effect, 'instead of', expected_effect)
-        
-#        raw_input("PRESS KEY TO CONTINUE")
-        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
-                                                   eef_pos,
-                                                   initial_obj_pos,
-                                                   expected_effect, 
-                                                   current_orien,
-                                                   current_inclin,
-                                                   current_dist,
-                                                   accuracy_value) ## accurate level                        
-        ''' Plot simulated traj '''
-        plot_traj_3d(nb_init_pos,
-                     traj,
-                     initial_obj_pos,
-                     curr_init_pos,
-                     expected_effect)
-                     
+                     expected_effect) 
+                                       
         ''' Identify effect '''
         print('positions', initial_obj_pos, final_obj_pos)                                    
         obtained_effect = env.identify_effect(initial_obj_pos,
                                               final_obj_pos)                                          
         print('expected_effect: ------------->', expected_effect.upper())
-        print('obtained_effect:', initial_obj_pos, final_obj_pos,
-                                  '------------->', obtained_effect.upper())  
-        accuracy_value += 1
+        print('obtained_effect: ------------->', obtained_effect.upper())
+        
+        traj_tries += 1
+
+#    ''' Repeat if bad trajectory '''
+#    ## if not contact produced or wrong effect, create more accurate traj
+#    accuracy_value = 1                                                                                                 
+##    if not moved:
+#    while not obj_moved and accuracy_value <= 3:
+#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+#        print('REPEATING TRAJ! OBJ NOT MOVED')
+#        
+##        raw_input("PRESS KEY TO CONTINUE")
+#        accuracy_value += 1
+#        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
+#                                                   eef_pos,
+#                                                   initial_obj_pos,
+#                                                   expected_effect, 
+#                                                   current_orien,
+#                                                   current_inclin,
+#                                                   current_dist,
+#                                                   accuracy_value) ## accurate level
+#        ''' Plot simulated traj '''
+#        plot_traj_3d(nb_init_pos,
+#                     traj,
+#                     initial_obj_pos,
+#                     curr_init_pos,
+#                     expected_effect)
+#                     
+#        ''' Identify effect '''
+#        print('positions', initial_obj_pos, final_obj_pos)                                    
+#        obtained_effect = env.identify_effect(initial_obj_pos,
+#                                              final_obj_pos)
+#        print('expected_effect: ------------->', expected_effect.upper())
+#        print('obtained_effect:', initial_obj_pos, final_obj_pos,
+#                                  '------------->', obtained_effect.upper())
+#        accuracy_value += 1                                                  
+#                                                   
+##    elif expected_effect != obtained_effect:
+#    while expected_effect != obtained_effect and accuracy_value <= 3:
+#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+#        print('REPEATING TRAJ! WRONG EFFECT', obtained_effect, 'instead of', expected_effect)
+#        
+##        raw_input("PRESS KEY TO CONTINUE")
+#        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
+#                                                   eef_pos,
+#                                                   initial_obj_pos,
+#                                                   expected_effect, 
+#                                                   current_orien,
+#                                                   current_inclin,
+#                                                   current_dist,
+#                                                   accuracy_value) ## accurate level                        
+#        ''' Plot simulated traj '''
+#        plot_traj_3d(nb_init_pos,
+#                     traj,
+#                     initial_obj_pos,
+#                     curr_init_pos,
+#                     expected_effect)
+#                     
+#        ''' Identify effect '''
+#        print('positions', initial_obj_pos, final_obj_pos)                                    
+#        obtained_effect = env.identify_effect(initial_obj_pos,
+#                                              final_obj_pos)                                          
+#        print('expected_effect: ------------->', expected_effect.upper())
+#        print('obtained_effect:', initial_obj_pos, final_obj_pos,
+#                                  '------------->', obtained_effect.upper())  
+#        accuracy_value += 1
     
     if sim_param.exec_traj:
         ''' Execute trajectory, listening to feedback '''
@@ -734,19 +739,21 @@ def simulate_traj(bn, ie,
 #                    next_mov_discr = prev_mov
                                
             except: # catch *all* exceptions
-                print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!! ')
-                print([curr_virt_pos, 
-                       node_values])
+                if sim_param.debug_infer:
+                    print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!! ')
+                    print([curr_virt_pos, 
+                           node_values])
                 virt_inference_vector.append([curr_virt_pos, 
                                              '',
                                              '', 
                                              0]) ## to avoid being selected
                 continue
             
-#            print([curr_virt_pos, 
-#                   node_values,
-#                   next_mov_discr, 
-#                   prob_value])
+            if sim_param.debug_infer:
+                print([curr_virt_pos, 
+                       node_values,
+                       next_mov_discr, 
+                       prob_value])
             virt_inference_vector.append([curr_virt_pos, 
                                          node_values,
                                          next_mov_discr, 
@@ -765,11 +772,13 @@ def simulate_traj(bn, ie,
         ## move with higher prob
         max_prob = virt_inference_vector[0][3]
         max_next_move = virt_inference_vector[0][2]
+        tmp_i = 0
         for tmp_pos in virt_inference_vector[1:]:
             if tmp_pos[3] > max_prob:
                 max_prob = tmp_pos[3]
-                max_next_move = tmp_pos[2]        
-        print('Next move for pos', max_next_move.upper(), max_prob)
+                max_next_move = tmp_pos[2]
+                tmp_i += 1
+        print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', tmp_i)
         next_mov_discr = max_next_move
 
 
@@ -1016,7 +1025,8 @@ def infere_mov(bn, ie, node_names, node_values):
         random_var = bn.variable(bn.idFromName(key))
         pos = findPosLabel(random_var,values_dict[key])
         if pos==-1:
-            print("Label not found for",str(key),values_dict[key])
+            if sim_param.debug_infrt:
+                print("Label not found for",str(key),values_dict[key])
         else:
             tmp=np.zeros(random_var.domainSize())
             for p in range(len(tmp)):

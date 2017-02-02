@@ -26,6 +26,8 @@ if sim_param.print_discr_random_dataset:
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
     import environment_setup as setup
+    
+import scipy.spatial.distance as d
 
 '''
 Create directed or random dataset
@@ -51,6 +53,8 @@ def create_dataset(dataset_type, nb_initial_pos):
 Read trajs of externally generated dataset
 '''
 def read_dataset(filename):
+    mean_move_size = 0
+    nb_moves = 0
     delta_vector = []
     lines = open(filename, 'r').readlines()
     for line in lines:
@@ -65,7 +69,6 @@ def read_dataset(filename):
         obtained_effect = env.identify_effect_3d(obj_initial_pos,
                                                  obj_final_pos)
 #        print('Nb WPs', len(pos_rot_vector)//12)
-#        for pos in range(0, len(pos_rot_vector)-12, 12):
         for pos in range(0, len(pos_rot_vector)-12, 12):
             current_x = float(pos_rot_vector[pos+0])
             current_y = float(pos_rot_vector[pos+1])
@@ -74,6 +77,10 @@ def read_dataset(filename):
             next_x = float(pos_rot_vector[pos+12+0])
             next_y = float(pos_rot_vector[pos+12+1])
             next_z = float(pos_rot_vector[pos+12+2])
+            
+            mean_move_size += d.euclidean([current_x, current_y, current_z],
+                                          [next_x, next_y, next_z])
+            nb_moves += 1
             
             current_obj_pos_x = float(pos_rot_vector[pos+6+0])
             current_obj_pos_y = float(pos_rot_vector[pos+6+1])
@@ -93,6 +100,10 @@ def read_dataset(filename):
                 True) ## Extended trajs are always moving the obj            
             current_delta_vector.append(current_delta)
         delta_vector += current_delta_vector
+        
+    mean_move_size /= nb_moves
+    sim_param.step_length = round(mean_move_size, sim_param.round_value)
+    print('Move step length:', sim_param.step_length)
     return delta_vector
 
 '''

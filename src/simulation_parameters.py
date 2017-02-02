@@ -64,8 +64,8 @@ test_statistics = False
 
 ''' Debug '''
 debug = False
-debug_infer = True
-debug_services = True
+debug_infer = False
+debug_services = False
 
 ''' Experiment discretization selection'''
 #experiment_type = 'discretization_selection'
@@ -104,6 +104,7 @@ step_length = 0.1 # obj_side/2
 random_max_movs = 7
 inferred_max_moves = 30
 max_nb_executed_deltas = inferred_max_moves
+max_inferred_traj_tries = 3
 
 ''' Discretization predefined values'''
 #orientation_values = ['up', 'left-up', 'left', 'left-down', 'down', 
