@@ -6,9 +6,9 @@
 import math
 
 ''' Main parameters '''
-nb_min_init_pos = 4 ## better if mod 4
+nb_min_init_pos = 8 ## better if mod 4
 nb_min_orientation_sections = 16
-nb_min_inclination_sections = 4
+nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
 exec_traj = False
 
@@ -100,9 +100,9 @@ fixed_obj_pos = True ## if false random obj pos during validation phase
 #obj_displacement = obj_side
 same_move_value = 0.025 
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
-step_length = 0.05 # obj_side/2
+step_length = 0.1 # obj_side/2
 random_max_movs = 7
-inferred_max_moves = 40
+inferred_max_moves = 30
 max_nb_executed_deltas = inferred_max_moves
 
 ''' Discretization predefined values'''
@@ -132,8 +132,8 @@ orien_offset = (2*math.pi/nb_min_orientation_sections)/2
 #orien_max_angle = math.pi + math.pi/2 + orien_offset
 orien_min_angle = -math.pi + orien_offset
 orien_max_angle = math.pi + orien_offset
-inclin_min_angle = 0 # -math.pi/2
-inclin_max_angle = math.pi #/2
+inclin_min_angle = 0
+inclin_max_angle = math.pi
 
 ''' Performance computation '''
 perf_success_value = 4

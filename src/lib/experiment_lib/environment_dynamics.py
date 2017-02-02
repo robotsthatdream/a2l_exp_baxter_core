@@ -118,18 +118,13 @@ def doIntersect(p1,q1,p2,q2):
 def check_obj_moved(box_pos,
                     _wp, 
                     _wp_next):
-                        
-#    box_pos = sim_param.obj_pos
-    box_side = sim_param.obj_side # * 2   
+
+    box_side = sim_param.obj_side
     
     ## object corners
     l_bottom_front_right = Point(box_pos[0] + box_side/2, 
                                  box_pos[1] - box_side/2, 
-                                 box_pos[2] - box_side/2)
-#    print('l_bottom_front_right', l_bottom_front_right.x,
-#                                  l_bottom_front_right.y,
-#                                  l_bottom_front_right.z,)
-    
+                                 box_pos[2] - box_side/2)    
     l_bottom_front_left = Point(box_pos[0] + box_side/2, 
                                  box_pos[1] + box_side/2, 
                                  box_pos[2] - box_side/2)                                 
@@ -160,22 +155,12 @@ def check_obj_moved(box_pos,
         wp_mid_point_y = (_wp[1] + _wp_next[1]) / 2
         wp_mid_point_z = (_wp[2] + _wp_next[2]) / 2
         if i == 0:
-            wp = Point(_wp[0], _wp[1], _wp[2])        
+#            wp = Point(_wp[0], _wp[1], _wp[2])        
             wp_next = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
         else:
-            wp = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
+#            wp = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
             wp_next = Point(_wp_next[0], _wp_next[1], _wp_next[2])
 #        print('EEF TMP POS', wp_next.x, wp_next.y, wp_next.z)
-
-#        if doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
-#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_back_right) or \
-#           doIntersect(wp, wp_next, l_bottom_front_right, l_top_front_right) or \
-#           doIntersect(wp, wp_next, l_bottom_front_left, l_bottom_back_left) or \
-#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
-#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
-#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left) or \
-#           doIntersect(wp, wp_next, l_bottom_front_right, l_bottom_front_left):
-#           obj_moved = True
 
         if wp_next.x <= l_bottom_front_right.x and \
             wp_next.y >= l_bottom_front_right.y and \
@@ -205,51 +190,79 @@ def check_obj_moved(box_pos,
         i += 1
     return obj_moved
     
-    
+def compute_obj_pos(box_pos,
+                    wp, 
+                    wp_final):
 
-#'''
-#Given a effect return the related final position
-#'''
-#def identify_effect_final_pos(_obj_pos, _effect):
-#    if _effect == 'right':
-#        return [_obj_pos[0] + sim_param.obj_displacement, _obj_pos[1], 0]
-#    elif _effect == 'left':
-#        return [_obj_pos[0] - sim_param.obj_displacement, _obj_pos[1], 0]
-#    elif _effect == 'up':
-#        return [_obj_pos[0], _obj_pos[1] + sim_param.obj_displacement, 0]
-#    elif _effect == 'down':
-#        return [_obj_pos[0], _obj_pos[1] - sim_param.obj_displacement, 0] 
-#        
-#'''
-#Given a final position identify the effect
-#'''
-#def identify_effect(_obj_pos):
-#    if _obj_pos == \
-#        [sim_param.obj_pos[0] + sim_param.obj_displacement, 
-#         sim_param.obj_pos[1], 0]:
-#        return 'right'        
-#    elif _obj_pos == \
-#        [sim_param.obj_pos[0] - sim_param.obj_displacement, 
-#         sim_param.obj_pos[1], 0]:
-#        return 'left'
-#    elif _obj_pos == \
-#        [sim_param.obj_pos[0], 
-#         sim_param.obj_pos[1] + sim_param.obj_displacement, 0]:
-#        return 'up'        
-#    elif _obj_pos == \
-#        [sim_param.obj_pos[0], 
-#         sim_param.obj_pos[1] - sim_param.obj_displacement, 0]:
-#        return 'down'
-#    else:
-#        print('ERROR - identify_effect : no effect identified')
+    obj_moved = check_obj_moved(box_pos,
+                                wp, 
+                                wp_final)
+    new_box_pos = [pos for pos in box_pos]
+    if obj_moved:
+        
+#        print('EEF TMP POS', wp[0], wp[1], wp[2])
+#        print('EEF TMP NEXT POS', wp_final[0], wp_final[1], wp_final[2])        
+        wp = [round(pos, sim_param.round_value) for pos in wp]
+        wp_final = [round(pos, sim_param.round_value) for pos in wp_final]
+        
+        if wp[0] < wp_final[0]: ## far
+            new_box_pos[0] += sim_param.obj_displacement
+        elif wp[0] > wp_final[0]: ## close
+            new_box_pos[0] -= sim_param.obj_displacement
+        elif wp[1] > wp_final[1]: ## left
+            new_box_pos[1] -= sim_param.obj_displacement
+        elif wp[1] < wp_final[1]: ## right
+            new_box_pos[1] += sim_param.obj_displacement
+    
+    new_box_pos = [round(pos,sim_param.round_value) for pos in new_box_pos]
+    return obj_moved, new_box_pos
+
+'''
+Given a effect return the related final position
+'''
+def identify_final_pos(_obj_pos, _effect):
+    if _effect == 'far':
+        return [_obj_pos[0] + sim_param.obj_displacement, _obj_pos[1], 0]
+    elif _effect == 'close':
+        return [_obj_pos[0] - sim_param.obj_displacement, _obj_pos[1], 0]
+    elif _effect == 'left':
+        return [_obj_pos[0], _obj_pos[1] + sim_param.obj_displacement, 0]
+    elif _effect == 'right':
+        return [_obj_pos[0], _obj_pos[1] - sim_param.obj_displacement, 0] 
+
+'''
+Given a final position identify the effect
+Virtual coordinates
+'''
+def identify_effect(initial_obj_pos, final_obj_pos):
+    print(initial_obj_pos, final_obj_pos)
+    if final_obj_pos[0:2] == \
+        [round(initial_obj_pos[0] + sim_param.obj_displacement, sim_param.round_value), 
+         initial_obj_pos[1]]:
+        return 'far'        
+    elif final_obj_pos[0:2] == \
+        [round(initial_obj_pos[0] - sim_param.obj_displacement, sim_param.round_value), 
+         initial_obj_pos[1]]:
+        return 'close'
+    elif final_obj_pos[0:2] == \
+        [initial_obj_pos[0], 
+         round(initial_obj_pos[1] + sim_param.obj_displacement, sim_param.round_value)]:
+        return 'left'        
+    elif final_obj_pos[0:2] == \
+        [initial_obj_pos[0], 
+         round(initial_obj_pos[1] - sim_param.obj_displacement, sim_param.round_value)]:
+        return 'right'
+    else:
+        print('ERROR - identify_effect : no effect identified')
+        return ''
         
 '''
 Given a final position identify the effect
+Real coordinates
 '''
 def identify_effect_3d(initial_obj_pos, final_obj_pos):
     delta_x = abs(final_obj_pos[0] - initial_obj_pos[0])
     delta_y = abs(final_obj_pos[1] - initial_obj_pos[1])
-    
     if delta_x > delta_y: ## up or down
         if final_obj_pos[0] > initial_obj_pos[0] :
             return 'far'
@@ -260,13 +273,41 @@ def identify_effect_3d(initial_obj_pos, final_obj_pos):
             return 'left'
         elif final_obj_pos[1] < initial_obj_pos[1] :    
             return 'right'
+
+   
+#'''
+#Given a effect return the related final position
+#'''
+#def identify_effect_final_pos(_obj_pos, _effect):
+#
+#    if sim_param.inversed_effects:
+#        if _effect == 'right':
+#            _effect = 'left'
+#        elif _effect == 'left':
+#            _effect = 'right'
+#        elif _effect == 'up':
+#            _effect = 'down'
+#        elif _effect == 'down':
+#            _effect = 'up'            
+#    
+#    if _effect == 'right':
+#        return [_obj_pos[0] + sim_param.obj_displacement, _obj_pos[1], 0]
+#    elif _effect == 'left':
+#        return [_obj_pos[0] - sim_param.obj_displacement, _obj_pos[1], 0]
+#    elif _effect == 'up':
+#        return [_obj_pos[0], _obj_pos[1] + sim_param.obj_displacement, 0]
+#    elif _effect == 'down':
+#        return [_obj_pos[0], _obj_pos[1] - sim_param.obj_displacement, 0]    
    
 '''
 Test
 '''
 if __name__ == '__main__':
 #    print(identify_effect([-0.3,0,0]))
-#    print(identify_effect_3d([0,0,0], [-.2,-0.3,0]))
+    print(identify_effect([0,0,0], [0.3,0,0])) ## far
+    print(identify_effect([0,0,0], [-0.3,0,0])) ## close
+    print(identify_effect([0,0,0], [0,0.3,0])) ## left
+    print(identify_effect([0,0,0], [0,-0.3,0])) ## right
 
 #    print(check_obj_moved([0,0,0], [0,0.5,0],[0,0.01,0])) # to the bottom
 #    print(check_obj_moved([0,0,0], [0,-0.5,0],[0,-0.01,0])) # up
@@ -278,5 +319,5 @@ if __name__ == '__main__':
 #    print(check_obj_moved([0,0,0], [0.2,0,0],[0,1,0])) # to the left
 #    print(check_obj_moved([0,0,0], [-0.1,-1,0],[0.1,10,0])) # up
 
-    print(check_obj_moved([0.65, 0.1, -0.11], 
-                          [0.7, 0.1, -0.11],[0.7, 0.15, -0.11]))
+#    print(check_obj_moved([0.65, 0.1, -0.11], 
+#                          [0.7, 0.1, -0.11],[0.7, 0.15, -0.11]))

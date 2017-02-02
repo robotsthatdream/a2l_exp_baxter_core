@@ -439,6 +439,9 @@ def infere_traj(bn, ie,
 
     if sim_param.debug_infer:
         print('\n\n\n////////////////////////////////')
+        print('////////////////////////////////')
+        print('////////////////////////////////')
+        print('////////////////////////////////')
         print('NEW TRAJ for init_pos', curr_init_pos,
               'effect', expected_effect.upper())
 
@@ -472,7 +475,7 @@ def infere_traj(bn, ie,
     delta_class_vector = []
     traj_res = ''
 #    expected_effect = '' 
-    obtained_effect = ''
+#    obtained_effect = ''
     
     nb_executed_deltas = 0
     execution_active = True ## still trying to touch object
@@ -481,25 +484,98 @@ def infere_traj(bn, ie,
     ''' Get obj pos '''
     initial_obj_pos = [0.65, 0.1, -0.135]
 #    ros_services.call_get_model_state(sim_param.obj_name)
-    print('initial_obj_pos :', initial_obj_pos)
+#    print('initial_obj_pos :', initial_obj_pos)
     initial_obj_pos = [round(pos, sim_param.round_value) for pos in initial_obj_pos[0:3]]
-    print('obj pos :', initial_obj_pos)    
+#    print('initial_obj_pos :', initial_obj_pos)    
     
     ''' Simulate trajectory '''
-    traj = simulate_traj(bn, ie, 
-                        eef_pos,
-                        initial_obj_pos,
-                        expected_effect, 
-                        current_orien,
-                        current_inclin,
-                        current_dist)
-                        
+    traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
+                                   eef_pos,
+                                   initial_obj_pos,
+                                   expected_effect, 
+                                   current_orien,
+                                   current_inclin,
+                                   current_dist)
+
     ''' Plot simulated traj '''
     plot_traj_3d(nb_init_pos,
                  traj,
-                 initial_obj_pos)
-                 
-#    raw_input("PRESS KEY TO CONTINUE")
+                 initial_obj_pos,
+                 curr_init_pos,
+                 expected_effect) 
+                                   
+    ''' Identify effect '''
+    print('positions', initial_obj_pos, final_obj_pos)                                    
+    obtained_effect = env.identify_effect(initial_obj_pos,
+                                          final_obj_pos)                                          
+    print('expected_effect: ------------->', expected_effect.upper())
+    print('obtained_effect: ------------->', obtained_effect.upper())
+
+    ''' Repeat if bad trajectory '''
+    ## if not contact produced or wrong effect, create more accurate traj
+    accuracy_value = 1                                                                                                 
+#    if not moved:
+    while not obj_moved and accuracy_value <= 3:
+        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        print('REPEATING TRAJ! OBJ NOT MOVED')
+        
+#        raw_input("PRESS KEY TO CONTINUE")
+        accuracy_value += 1
+        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
+                                                   eef_pos,
+                                                   initial_obj_pos,
+                                                   expected_effect, 
+                                                   current_orien,
+                                                   current_inclin,
+                                                   current_dist,
+                                                   accuracy_value) ## accurate level
+        ''' Plot simulated traj '''
+        plot_traj_3d(nb_init_pos,
+                     traj,
+                     initial_obj_pos,
+                     curr_init_pos,
+                     expected_effect)
+                     
+        ''' Identify effect '''
+        print('positions', initial_obj_pos, final_obj_pos)                                    
+        obtained_effect = env.identify_effect(initial_obj_pos,
+                                              final_obj_pos)
+        print('expected_effect: ------------->', expected_effect.upper())
+        print('obtained_effect:', initial_obj_pos, final_obj_pos,
+                                  '------------->', obtained_effect.upper())
+        accuracy_value += 1                                                  
+                                                   
+#    elif expected_effect != obtained_effect:
+    while expected_effect != obtained_effect and accuracy_value <= 3:
+        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        print('REPEATING TRAJ! WRONG EFFECT', obtained_effect, 'instead of', expected_effect)
+        
+#        raw_input("PRESS KEY TO CONTINUE")
+        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
+                                                   eef_pos,
+                                                   initial_obj_pos,
+                                                   expected_effect, 
+                                                   current_orien,
+                                                   current_inclin,
+                                                   current_dist,
+                                                   accuracy_value) ## accurate level                        
+        ''' Plot simulated traj '''
+        plot_traj_3d(nb_init_pos,
+                     traj,
+                     initial_obj_pos,
+                     curr_init_pos,
+                     expected_effect)
+                     
+        ''' Identify effect '''
+        print('positions', initial_obj_pos, final_obj_pos)                                    
+        obtained_effect = env.identify_effect(initial_obj_pos,
+                                              final_obj_pos)                                          
+        print('expected_effect: ------------->', expected_effect.upper())
+        print('obtained_effect:', initial_obj_pos, final_obj_pos,
+                                  '------------->', obtained_effect.upper())  
+        accuracy_value += 1
     
     if sim_param.exec_traj:
         ''' Execute trajectory, listening to feedback '''
@@ -551,9 +627,12 @@ def infere_traj(bn, ie,
         delta_vector = []
         inf_dicr = []
         delta_class_vector = []
-        traj_res = 'success'
-        expected_effect = 'right'
-        obtained_effect = 'right'
+        if expected_effect in obtained_effect:
+            traj_res = 'success'
+        elif obj_moved:
+            traj_res = 'false_pos'
+        else:
+            traj_res = 'fail'            
 
     return traj_res, \
             eef_traj_vector, obj_traj_vector, \
@@ -570,7 +649,11 @@ def simulate_traj(bn, ie,
                 expected_effect, 
                 current_orien,
                 current_inclin,
-                current_dist):
+                current_dist,
+                accurate_level = 1):
+    
+    if accurate_level > 1:
+        print('ACCURATE TRAJECTORY:',accurate_level)
     
     eef_traj = [[round(eef_pos[0],2),
                  round(eef_pos[1], 2), 
@@ -578,100 +661,178 @@ def simulate_traj(bn, ie,
     delta_vector = [] ## [orientation, inclination, distance, next_mov_discr]
     obj_moved = False    
     delta_nb_var_res = -1
-    prev_mov = "close"
+#    prev_mov = "close"
+    prev_mov_delta = [0,0,0]
     i = 0
-    while not obj_moved and i < sim_param.inferred_max_moves:
-#        print('\nInferred delta ', i)
+    while not obj_moved and i < sim_param.inferred_max_moves*accurate_level:
+        print('\nInferred delta ', i)
         
         current_eef_x = eef_traj[-1][0] ## last value added
         current_eef_y = eef_traj[-1][1]
         current_eef_z = eef_traj[-1][2]
         
-        ## compute current variables value
-        orientation = discr_orien.compute_orientation_discr(
-            [current_eef_x,current_eef_y], 
-            obj_pos,
-            current_orien)
+        ## compute neighbours virtual positions
+        nn_pos_vector =  [[current_eef_x,
+                           current_eef_y,
+                           current_eef_z]]        
+        add_dist = sim_param.step_length/2*accurate_level
+        for j in range(6):
+            tmp_pos = [current_eef_x,
+                       current_eef_y,
+                       current_eef_z]
+            if j == 0: ## front
+                tmp_pos[0] = current_eef_x + add_dist
+            elif j == 1: ## back
+                tmp_pos[0] = current_eef_x - add_dist
+            elif j == 2: ## right
+                tmp_pos[1] = current_eef_y - add_dist                
+            elif j == 3: ## left
+                tmp_pos[1] = current_eef_y + add_dist                
+            elif j == 4: ## up
+                tmp_pos[2] = current_eef_z + add_dist
+            elif j == 5: ## down
+                tmp_pos[2] = current_eef_z - add_dist
+            tmp_pos = [round(curr_pos, sim_param.round_value) 
+                             for curr_pos in tmp_pos]
+#            print(j, tmp_pos)
+            nn_pos_vector.append(tmp_pos)
+        
+        ## compute their prob for next move
+        virt_inference_vector = []
+        for curr_virt_pos in nn_pos_vector:        
+            current_eef_x_tmp = curr_virt_pos[0]
+            current_eef_y_tmp = curr_virt_pos[1]
+            current_eef_z_tmp = curr_virt_pos[2]
             
-        inclination = discr_inclin.compute_inclination_discr(
-            obj_pos,
-            [current_eef_x,current_eef_y,current_eef_z],             
-            current_inclin)
-#        print("current inclination :", inclination)
-                            
-        distance = discr_dist.compute_distance(
-            [current_eef_x,current_eef_y], 
-            obj_pos,
-            current_dist)
-        node_names = ['effect','orientation', 'inclination', 'distance']
-        node_values = [expected_effect,orientation, inclination, distance]
+            ## compute current variables value
+            orientation = discr_orien.compute_orientation_discr(
+                [current_eef_x_tmp,current_eef_y_tmp], 
+                obj_pos,
+                current_orien)
+                
+            inclination = discr_inclin.compute_inclination_discr(
+                obj_pos,
+                [current_eef_x_tmp,current_eef_y_tmp,current_eef_z_tmp],             
+                current_inclin)
+    #        print("current inclination :", inclination)
+                                
+            distance = discr_dist.compute_distance(
+                [current_eef_x_tmp,current_eef_y_tmp], 
+                obj_pos,
+                current_dist)
+            node_names = ['effect','orientation', 'inclination', 'distance']
+            node_values = [expected_effect,orientation, inclination, distance]
+                
+            ## infere next move            
+            try:
+                next_mov_discr, prob_value, delta_nb_var, same_prob = \
+                    infere_mov(bn, ie,                                        
+                               node_names,
+                               node_values)     
+#               ## if not knowledge about next mov, repeat previous one
+#                if same_prob:
+#                    next_mov_discr = prev_mov
+                               
+            except: # catch *all* exceptions
+                print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!! ')
+                print([curr_virt_pos, 
+                       node_values])
+                virt_inference_vector.append([curr_virt_pos, 
+                                             '',
+                                             '', 
+                                             0]) ## to avoid being selected
+                continue
             
-        ## infere next move
-        try:
-            next_mov_discr, prob_value, delta_nb_var, same_prob = \
-                infere_mov(bn, ie,                                        
-                           node_names,
-                           node_values)     
-        except: # catch *all* exceptions
-            print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!! ')
-            break
-            
-        ## if not knowledge about next mov, repeat previous one
-        if same_prob:
-            next_mov_discr = prev_mov
-                       
+#            print([curr_virt_pos, 
+#                   node_values,
+#                   next_mov_discr, 
+#                   prob_value])
+            virt_inference_vector.append([curr_virt_pos, 
+                                         node_values,
+                                         next_mov_discr, 
+                                         prob_value])
+        ## check if no move was inferred
+        if len(virt_inference_vector) == 0:
+            print('-------------------------------> NO MOVE INFERRED', )
+            return eef_traj
+        
+        ## check if same prob for all close points
+        prob_found = all([x[-1]==virt_inference_vector[0][-1] for x in virt_inference_vector])
+        if prob_found:
+            print('-------------------------------> SAME PROB', 
+                  virt_inference_vector[0][-1])
+                
+        ## move with higher prob
+        max_prob = virt_inference_vector[0][3]
+        max_next_move = virt_inference_vector[0][2]
+        for tmp_pos in virt_inference_vector[1:]:
+            if tmp_pos[3] > max_prob:
+                max_prob = tmp_pos[3]
+                max_next_move = tmp_pos[2]        
+        print('Next move for pos', max_next_move.upper(), max_prob)
+        next_mov_discr = max_next_move
+
+
         if delta_nb_var_res == -1:
            delta_nb_var_res = delta_nb_var 
 
-        if sim_param.debug_infer:
-            print(expected_effect.upper(),
-                  orientation.upper(),
-                  inclination.upper(),
-                  distance.upper(), 
-                  "-> ", 
-                  next_mov_discr.upper(), 
-                  "with probability", prob_value)
-                
+#        if sim_param.debug_infer:
+#            print(expected_effect.upper(),
+#                  orientation.upper(),
+#                  inclination.upper(),
+#                  distance.upper(), 
+#                  "-> ", 
+#                  next_mov_discr.upper(), 
+#                  "with probability", prob_value)
+        
+        ## compute displacement regarding move
         delta_x = 0
         delta_y = 0
         delta_z = 0
-        mov_step = 1 #sim_param.step_length
+        move_coord = 1 ## if move in this coord
         if 'far' in next_mov_discr:
-            delta_x = mov_step
+            delta_x = move_coord
         elif 'close' in next_mov_discr:
-            delta_x = -mov_step
+            delta_x = -move_coord
         if 'right' in next_mov_discr:
-            delta_y = -mov_step
+            delta_y = -move_coord
         elif 'left' in next_mov_discr:
-            delta_y = mov_step
+            delta_y = move_coord
         if 'up' in next_mov_discr:
-            delta_z = mov_step
+            delta_z = move_coord
         elif 'down' in next_mov_discr:
-            delta_z = -mov_step
+            delta_z = -move_coord
             
-        ## lenght of the movement must be equal to step_length
+        ## length of the movement must be equal to step_length
         dims_vector = abs(delta_x) + abs(delta_y) + abs(delta_z)
-        mov_step = sim_param.step_length/sqrt(dims_vector)
-        if delta_x == 1 :
+        if dims_vector == 0: ## to avoid div by 0 ??? TODOOOOOOOOOOOOOOOOOOOOOOO
+            dims_vector = 1
+        mov_step = round(sim_param.step_length/sqrt(dims_vector), sim_param.round_value)
+        mov_step = round(mov_step / accurate_level, sim_param.round_value)
+        print('mov_step', mov_step)
+        if delta_x > 0: #== 1 :
             delta_x = mov_step
-        elif delta_x == -1:
+        elif delta_x < 0: #== 1 : == -1:
             delta_x = -mov_step
-        if delta_y == 1 :
+        if delta_y > 0: #== 1 : == 1 :
             delta_y = mov_step
-        elif delta_y == -1:
+        elif delta_y < 0: #== 1 : == -1:
             delta_y = -mov_step
-        if delta_z == 1 :
+        if delta_z > 0: #== 1 : == 1 :
             delta_z = mov_step
-        elif delta_z == -1:
-            delta_z = -mov_step
-        print("DELTA :", delta_x, delta_y, delta_z, 
+        elif delta_z < 0: #== 1 : == -1:
+            delta_z = -mov_step            
+        print("Delta :", delta_x, delta_y, delta_z, 
               'Norm:', round(d.euclidean([0, 0, 0],
                                           [delta_x, delta_y, delta_z]), 3))
         
         ## move eef to new position
-        next_eef_x = current_eef_x + delta_x
-        next_eef_y = current_eef_y + delta_y
-        next_eef_z = current_eef_z + delta_z
+        next_eef_x = round(current_eef_x + delta_x + prev_mov_delta[0]/2, sim_param.round_value)
+        next_eef_y = round(current_eef_y + delta_y + prev_mov_delta[1]/2, sim_param.round_value)
+        next_eef_z = round(current_eef_z + delta_z + prev_mov_delta[2]/2, sim_param.round_value)
+        print('Prev mov delta', prev_mov_delta)
+        print('Previous EEF pos :', 
+              current_eef_x, current_eef_y, current_eef_z)
         print('New EEF pos :', 
               next_eef_x, next_eef_y, next_eef_z)
         
@@ -680,16 +841,27 @@ def simulate_traj(bn, ie,
                              next_mov_discr])
 
         ## check if obj was moved
-        obj_moved = env.check_obj_moved(
-                        obj_pos,
-                        [current_eef_x,current_eef_y,current_eef_z], 
-                        [next_eef_x,next_eef_y,next_eef_z])
+#        obj_moved = env.check_obj_moved(
+#                        obj_pos,
+#                        [current_eef_x,current_eef_y,current_eef_z], 
+#                        [next_eef_x,next_eef_y,next_eef_z])
+        obj_moved, obj_moved_pose = \
+            env.compute_obj_pos(
+                obj_pos,
+                [current_eef_x,current_eef_y,current_eef_z], 
+                [next_eef_x,next_eef_y,next_eef_z])
+
         print("obj_moved :", obj_moved)
         print(' ')
-        prev_mov = next_mov_discr
+#        prev_mov = next_mov_discr
+        prev_mov_delta = [delta_x,
+                          delta_y,
+                          delta_z]
         i += 1
+        
+        ## end delta
 
-    return eef_traj #, delta_vector
+    return eef_traj, obj_moved, obj_moved_pose
 
 
 '''
@@ -699,11 +871,14 @@ a
 
 def plot_traj_3d(nb_initial_pos,                 
                  traj,
-                 obj_pos):
+                 obj_pos,
+                 curr_init_pos,
+                 effect):
 
     # plot figure
     fig = plt.figure()
     fig.clf()
+    fig.canvas.set_window_title(str(curr_init_pos) + '->' + effect)
     ax = Axes3D(fig)
 
 #    # table        
@@ -859,7 +1034,7 @@ def infere_mov(bn, ie, node_names, node_values):
     ## get posterior    
     posterior = ie.posterior(bn.idFromName('move'))
 #    if sim_param.debug:
-    print(posterior)
+#    print(posterior)
 #    print(posterior[0])
 #    print(posterior[-1])
 #    print(type(posterior))

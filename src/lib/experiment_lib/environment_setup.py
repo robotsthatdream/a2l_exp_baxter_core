@@ -6,7 +6,7 @@
 from __future__ import print_function
 
 import random
-from math import sin,cos,pi
+from math import sin,cos,pi,degrees
 import numpy as np
 import scipy.spatial.distance as spatial
 
@@ -21,8 +21,8 @@ Generate the initial positions of the eef
 def gen_init_eef(nb_init_pos, 
                  radius = 1, 
                  obj_pos = [0,0,sim_param.eef_z_value]):
-    angle = 2*pi/nb_init_pos
-    list_radians = [angle*i for i in range(0,nb_init_pos)]
+    angle = 2*pi/nb_init_pos    
+    list_radians = [angle*i for i in range(0,nb_init_pos)]    
         
     list_x_axis = []
     list_y_axis = []    
