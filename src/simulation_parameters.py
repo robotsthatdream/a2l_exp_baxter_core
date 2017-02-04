@@ -6,11 +6,12 @@
 import math
 
 ''' Main parameters '''
-nb_min_init_pos = 8 ## better if mod 4
+nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
-exec_traj = False
+exec_traj = True
+single_init_pos = True ## if False, circle of init pos around the box
 
 semi_random_trajs = True ## initial trajs using dicretized movs
 discr_hand_coded = False
@@ -21,7 +22,7 @@ discr_random = False
 print_time = False ## print elapsed time for some functions
 plot_dataset_stats = True ## plot the content of the discretized dataset
 new_dataset = False ## True to generate a new dataset, False to use current one
-dpi = 80 
+dpi = 300 
 round_value = 2
 
 print_prob_table_values = False ## print the CPTs values
@@ -65,7 +66,7 @@ test_statistics = False
 ''' Debug '''
 debug = False
 debug_infer = False
-debug_services = False
+debug_services = True
 
 ''' Experiment discretization selection'''
 #experiment_type = 'discretization_selection'
@@ -73,11 +74,18 @@ orientation_discr_vector_size = 4
 distance_discr_vector_size = 3
 
 ''' Experiment A2L '''
-experiment_type = 'a2l_dataset_extension'
+#experiment_type = 'a2l_dataset_extension'
 plot_dataset_size_score = True ## plot the score in the dataset size plots
 nb_dataset_sizes = 1 ## number of increments of init pos : 8->16->32->64
-eef_z_value = 0.14
+eef_z_value = 0.11
 obj_name = "cube"
+
+''' Experiment Reproduce dataset '''
+experiment_type = 'a2l_reproduce_dataset'
+nb_infere_trajs = 10
+obj_too_far_distance = 0.6 ## to move it back close to the eef init pos
+new_obj_pos_dist = 0.1 ## for new pos close to init obj pos 
+max_inferred_traj_tries = 1
 
 ''' ROS execution '''
 feedback_topic = '/a2l/traj_exec_info'
@@ -88,7 +96,8 @@ obj_moved_threshold = 0.1
 inferred_traj = []
 
 ''' Experiment set-up values '''
-#obj_pos = [0,0,0]
+untucked_left_eef_pos = [0.58, 0.18, 0.11]
+########### TODO RIGHTTTTTTTTTTTTTTTTTTTT INIT POS
 obj_side = 0.1
 obj_displacement = 0.3
 circumference_radio = 0.2
@@ -96,15 +105,14 @@ colormap_values = ['red','yellow','green','black']
 
 ''' Experiment run values '''
 #nb_runs = 1
-fixed_obj_pos = True ## if false random obj pos during validation phase
+fixed_obj_pos = False ## if false random obj pos during validation phase
 #obj_displacement = obj_side
-same_move_value = 0.025 
+same_move_value = 0.025
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
-step_length = 0.1 # obj_side/2
+step_length = 0 # obj_side/2 ## online coñputation based on dataset 
 random_max_movs = 7
 inferred_max_moves = 30
 max_nb_executed_deltas = inferred_max_moves
-max_inferred_traj_tries = 3
 
 ''' Discretization predefined values'''
 #orientation_values = ['up', 'left-up', 'left', 'left-down', 'down', 
@@ -123,7 +131,8 @@ move_values = ['far',
                'right', 'right_up', 'right_down',
                'up',
                'down']               
-effect_values = ['left', 'right', 'close', 'far']
+#effect_values = ['left', 'right', 'close', 'far']
+effect_values = ['right']               
 
 remote_far_boundary_value = 2 * obj_side
 far_close_boundary_value = 1 * obj_side

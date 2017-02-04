@@ -121,19 +121,27 @@ def basic_learning_dataset_size(dataset_type_vector,
                 if sim_param.print_time:
                     print('Elapsed time for learn_bn', 
                           time.process_time() - t)
-                                
-                infer_ros.infere_trajectories(
-                    current_results_folder,
-                    bn, 
-                    current_algo,
-                    dataset_size_class,
-                    dataset_type,
-#                    current_obj_pos,                    
-                    current_nb_initial_pos,
-                    0, ## number of traj
-                    current_orien_discr,
-                    current_inclin_discr,
-                    current_dist_discr)
+
+                curr_nb_infere_trajs = 0
+                if sim_param.experiment_type == 'a2l_reproduce_dataset':
+                    max_nb_infere_trajs = sim_param.nb_infere_trajs
+                else:
+                    max_nb_infere_trajs = 1
+                    
+                while curr_nb_infere_trajs < max_nb_infere_trajs:                                    
+                    ## validate affordance knowledge                                
+                    infer_ros.infere_trajectories(
+                        current_results_folder,
+                        bn, 
+                        current_algo,
+                        dataset_size_class,
+                        dataset_type,         
+                        current_nb_initial_pos,
+                        curr_nb_infere_trajs,
+                        current_orien_discr,
+                        current_inclin_discr,
+                        current_dist_discr)
+                    curr_nb_infere_trajs += 1
                                                
                 ## Store stats and move's mean prob                 
                 current_algo_stats_class = \

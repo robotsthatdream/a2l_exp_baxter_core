@@ -265,7 +265,7 @@ def plot_dataset_stats(filename):
             dataset_values.add_effect_value(effect, orien, inclin, move, dist)
 
 #    dataset_values.print_me()
-    dataset_values.print_stats(v_max)  
+#    dataset_values.print_stats(v_max)  
 
 '''
 Test

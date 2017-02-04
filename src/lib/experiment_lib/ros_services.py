@@ -72,7 +72,7 @@ def call_get_model_state(model_name):
         get_model_state = rospy.ServiceProxy(service_name, 
                                              type_name)
         resp = get_model_state(model_name)
-        print(resp)
+#        print(resp)
         return resp.model_state        
     except rospy.ServiceException, e:
         print ("Service call to get_model_state failed: %s"%e) 
@@ -134,7 +134,7 @@ def call_trajectory_motion(feedback_frequency, trajectory):
 '''
 a
 '''
-def call_move_to_initial_position(nb_initial_pos):
+def call_move_to_initial_position(init_pos_coord):
     service_name = 'a2l/move_to_initial_position'
     rospy.wait_for_service(service_name)
     try:
@@ -143,7 +143,9 @@ def call_move_to_initial_position(nb_initial_pos):
         type_name = Movetoinitpos
         move_to_initial_position = rospy.ServiceProxy(service_name, 
                                              type_name)
-        resp = move_to_initial_position(nb_initial_pos)
+        resp = move_to_initial_position(init_pos_coord[0],
+                                        init_pos_coord[1],
+                                        init_pos_coord[2])
         time.sleep(1)
         return resp.success        
     except rospy.ServiceException, e:
@@ -152,7 +154,9 @@ def call_move_to_initial_position(nb_initial_pos):
 '''
 a
 '''
-def call_restart_world(element):
+def call_restart_world(element,
+                       model_name = '',
+                       model_pos = [0,0,0]):
     service_name = 'a2l/restart_world'
     rospy.wait_for_service(service_name)
     try:        
@@ -161,7 +165,11 @@ def call_restart_world(element):
         type_name = Restartworld
         restart_world = rospy.ServiceProxy(service_name, 
                                              type_name)
-        resp = restart_world(element)      
+        resp = restart_world(element,
+                             model_name,
+                             model_pos[0],
+                             model_pos[1],
+                             model_pos[2])      
         return resp.success        
     except rospy.ServiceException, e:
         print ("Service call to restart_world failed: %s"%e)    

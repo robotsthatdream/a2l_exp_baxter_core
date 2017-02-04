@@ -33,7 +33,8 @@ def print_sim_param(print_values,
                     current_inclin_discr,
                     current_dist_discr):    
 
-    if sim_param.experiment_type == 'a2l_dataset_extension':
+    if sim_param.experiment_type == 'a2l_dataset_extension' or \
+       sim_param.experiment_type == 'a2l_reproduce_dataset':
         print('\n-----------------EXPERIMENT - LEARN WITH A2L, and EXTEND DATASET')
         print('\nINIT POSITIONS USED :', print_values[0])
     elif sim_param.experiment_type == 'discretization_selection':
@@ -142,11 +143,6 @@ if __name__ == "__main__":
     current_generated_files_folder, current_results_folder, current_plot_folder = \
         generate_folders()
 
-#    ''' Restart world '''
-#    success = ros_services.call_restart_world()
-#    if not success:
-#            print("ERROR - restart_world failed")
-
     ''' Update number of initial positions in ROS '''
     ros_services.update_nb_init_pos()
     
@@ -180,21 +176,8 @@ if __name__ == "__main__":
                          distance_discr_vector])
 
         ''' Run experiment A2L'''        
-    elif sim_param.experiment_type == 'a2l_dataset_extension':
-        
-        print('\n\n----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('INITIALIZE ENVIRONMENT')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------')
-        print('----------------------------------------------------------\n\n')          
-        
-        ###### TBD with the roslaunch file
+    elif sim_param.experiment_type == 'a2l_dataset_extension' or \
+         sim_param.experiment_type == 'a2l_reproduce_dataset':
         
         print('\n\n----------------------------------------------------------')
         print('----------------------------------------------------------')

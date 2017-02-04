@@ -21,16 +21,23 @@ Generate the initial positions of the eef
 def gen_init_eef(nb_init_pos, 
                  radius = 1, 
                  obj_pos = [0,0,sim_param.eef_z_value]):
-    angle = 2*pi/nb_init_pos    
-    list_radians = [angle*i for i in range(0,nb_init_pos)]    
-        
-    list_x_axis = []
-    list_y_axis = []    
-    for a in list_radians:
-        list_x_axis.append(obj_pos[0] + cos(a)*radius)
-        list_y_axis.append(obj_pos[1] + sin(a)*radius)    
-    list_z_axis = [obj_pos[2] for i in range(len(list_x_axis))]
-    return list_x_axis, list_y_axis, list_z_axis
+                     
+    if sim_param.single_init_pos:
+        return [sim_param.untucked_left_eef_pos[0]], \
+               [sim_param.untucked_left_eef_pos[1]], \
+               [sim_param.untucked_left_eef_pos[2]]
+
+    else:                     
+        angle = 2*pi/nb_init_pos    
+        list_radians = [angle*i for i in range(0,nb_init_pos)]    
+            
+        list_x_axis = []
+        list_y_axis = []    
+        for a in list_radians:
+            list_x_axis.append(obj_pos[0] + cos(a)*radius)
+            list_y_axis.append(obj_pos[1] + sin(a)*radius)    
+        list_z_axis = [obj_pos[2] for i in range(len(list_x_axis))]
+        return list_x_axis, list_y_axis, list_z_axis
 
 '''
 Generate random pos of the object

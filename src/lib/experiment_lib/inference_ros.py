@@ -39,7 +39,7 @@ else:
 #import roslib
 #roslib.load_manifest('std_msgs')
 import rospy
-#from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -66,7 +66,7 @@ class Traj_callback():
                      
         self.eef_traj_vector = eef_traj_vector ## [[eef_x, eef_y, eef_z]]
         self.obj_traj_vector = obj_traj_vector ## [[obj_x, obj_y, obj_z]]
-        self.delta_vector = delta_vector ## [[orientation, inclonation, distance, next_mov_discr]]
+        self.delta_vector = delta_vector ## [[orientation, inclionation, distance, next_mov_discr]]
         self.traj_inferred_discr_delta_vector = inf_dicr ## [[effect, idem]]
         self.delta_class_vector = delta_class_vector
         self.traj_res = traj_res ##success or false_pos or fail
@@ -82,7 +82,7 @@ class Traj_callback():
 #                                   queue_size=1)
 #        self.sub_up = True        
 #        rospy.spin()
-        
+#        
 #        ## execute trajectory
 #        simulated_traj_vector = [i for el in simulated_traj for i in el] # [float]
 #        ros_services.call_trajectory_motion(sim_param.feedback_window, 
@@ -90,8 +90,8 @@ class Traj_callback():
 #        print("FINISHED EXECUTION IN ROS !! ")
 
     def execute_traj_callback(self, feedback_data):
-#        print("execute_traj_callback function", feedback_data.data)
-#        print('feedback_data size', len(feedback_data.data))
+        print("execute_traj_callback function", feedback_data.data)
+        print('feedback_data size', len(feedback_data.data))
         
         ''' Read feedback '''
         self.nb_executed_deltas += len(feedback_data.data)/6
@@ -255,9 +255,9 @@ def infere_trajectories(current_results_folder,
                         alg,
                         dataset_size_class,
                         dataset_string,
-#                        current_obj_pos,
                         nb_initial_pos,
-                        nb_traj,
+                        #nb_traj,
+                        curr_nb_infere_trajs,
                         current_orien,
                         current_inclin,
                         current_dist):            
@@ -266,12 +266,17 @@ def infere_trajectories(current_results_folder,
     
     ## create initial positions of eef
     _list_x_axis, _list_y_axis, _list_z_axis = \
-        setup.gen_init_eef(nb_initial_pos)    
-    init_pos_vector = list(
-        zip(_list_x_axis, 
-            _list_y_axis, 
-            _list_z_axis))
+        setup.gen_init_eef(nb_initial_pos)
 
+    if len(_list_x_axis) > 1:
+        init_pos_vector = list(
+            zip(_list_x_axis, 
+                _list_y_axis, 
+                _list_z_axis))
+    else:
+        init_pos_vector = [[_list_x_axis[0],
+                           _list_y_axis[0],
+                           _list_z_axis[0]]]
     ## restart statistics
     nb_success_r = 0
     nb_success_l = 0
@@ -287,19 +292,97 @@ def infere_trajectories(current_results_folder,
     nb_fail_d = 0
     
     mean_prob = 0
+
+#    '''  eef to init pos '''
+#    eef_init_pos = init_pos_vector[0]
+#    res_init_pos = ros_services.call_move_to_initial_position(eef_init_pos)
+#    ## TODO check result
     
-#    ## restart scenario
-#    if sim_param.debug_infer:
-#        print('CALL SERVICE restart_world')
-#    success = ros_services.call_restart_world()
-#    if not success:
-#            print("ERROR - restart_world failed")
+    ''' Restart env '''
+    if sim_param.exec_traj:
+        if sim_param.experiment_type != 'a2l_reproduce_dataset':
+            ''' Restart scenario '''         
+            success = ros_services.call_restart_world("setup")
+            if not success:
+                print("ERROR - restart_world failed")
+        else:
+            if curr_nb_infere_trajs == 0:
+                ''' Restart scenario '''         
+                success = ros_services.call_restart_world("setup")
+                if not success:
+                    print("ERROR - restart_world failed")    
+
+    ''' Get obj pos '''
+    obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
+    obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
+    print('obj_pos :', obj_pos)
+    ######################################################################################################3
+    ## TODO THIS SHOULD BE IN A DIFFERENT FUNCTION
+    ## if obj moved    
+    if sim_param.experiment_type == 'a2l_reproduce_dataset' and curr_nb_infere_trajs > 0:     
+        eef_pos = ros_services.call_get_eef_pose('left')
+        eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
+        print("eef_pos", eef_pos)  
     
+        ## eef init pos is related to obj pos
+        ## TODO HACER EN RELACION A LA CAJA NO AL INIT POS
+        eef_init_pos = init_pos_vector[0]
+        if obj_pos[0] > eef_pos[0]:
+            eef_init_pos[0] = eef_init_pos[0] + random.uniform(-sim_param.new_obj_pos_dist,
+                                               sim_param.new_obj_pos_dist)
+#        elif obj_pos[0] < eef_init_pos[0]: ## can contact the body
+#            eef_init_pos[0] -= random.uniform(-sim_param.new_obj_pos_dist,
+#                                               sim_param.new_obj_pos_dist)                
+
+        if obj_pos[1] > eef_pos[1]:
+            eef_init_pos[1] = eef_init_pos[1] + random.uniform(-sim_param.new_obj_pos_dist,
+                                                sim_param.new_obj_pos_dist)
+        elif obj_pos[1] < eef_pos[1]:
+            eef_init_pos[1] = eef_init_pos[1] - random.uniform(-sim_param.new_obj_pos_dist,
+                                                sim_param.new_obj_pos_dist)
+        eef_pos = [round(pos, sim_param.round_value) for pos in eef_init_pos]                                               
+        init_pos_vector[0] = eef_pos
+
+        res_init_pos = ros_services.call_move_to_initial_position(eef_init_pos)
+        ## TODO check result        
+        
+        ## if obj too far from end_effector put it around the center of the table
+        ## and the eef close 
+        ''' Get obj pos '''
+        obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
+        obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
+        print('obj_pos :', obj_pos)
+        
+        print('euclidean(obj_pos, eef_init_pos)', d.euclidean(obj_pos, eef_init_pos))
+        if d.euclidean(obj_pos, eef_init_pos) > sim_param.obj_too_far_distance:
+            print('-------------> ACTUALIZANDO POS CAJA')    
+            ## compute new obj pos
+            new_obj_pos = [0.65, 0, -0.1] ## TODO This should be a response of a C++ ROS service
+#            new_obj_pos = obj_pos 
+            new_obj_pos = [new_obj_pos[0] + random.uniform(-sim_param.new_obj_pos_dist,
+                                                           sim_param.new_obj_pos_dist),
+                           new_obj_pos[1] + random.uniform(-sim_param.new_obj_pos_dist,
+                                                           sim_param.new_obj_pos_dist),
+                           new_obj_pos[2]]
+            new_obj_pos = [round(pos, sim_param.round_value) for pos in new_obj_pos]
+            obj_pos = new_obj_pos
+            
+            ## move obj to new pos    
+            success = ros_services.call_restart_world("object",
+                                                      sim_param.obj_name,
+                                                      new_obj_pos)
+            if not success:
+                print("ERROR - restart_world failed")            
+       
+    ######################################################################################################3    
+    
+
     ## for each initial position infere / plot / save a traj
     nb_init_pos = len(init_pos_vector)
     total_inferred_discr_delta_vector = [] ## delta knowledge created during evaluations
     for curr_init_pos in range(nb_init_pos):
         nb_effect = 0
+        init_pos_coord = init_pos_vector[curr_init_pos]
         
         ## for each effect
         while nb_effect < len(sim_param.effect_values):
@@ -310,12 +393,12 @@ def infere_trajectories(current_results_folder,
             delta_class_vector, obtained_effect, \
             tmp_inferred_discr_delta_vector = \
                 infere_traj(bn, ie,
-                            curr_init_pos,
-                            nb_init_pos,
-#                            init_pos_coord, ## coord XYZ
+                            init_pos_coord, ## [X, Y, Z]
+                            init_pos_vector,
+                            obj_pos,
                             desired_effect, 
-#                            current_obj_pos,
-                            current_orien, current_inclin, current_dist)
+                            current_orien, current_inclin, current_dist,
+                            curr_nb_infere_trajs)
 
             ## store current inferred traj
             tmp_infer_traj_class = \
@@ -432,40 +515,49 @@ def infere_trajectories(current_results_folder,
 Infere traj to get a desired effect
 '''
 def infere_traj(bn, ie,
-                curr_init_pos,
-                nb_init_pos,
+                init_pos_coord,
+                init_pos_vector,
+                initial_obj_pos,
                 expected_effect, 
-                current_orien, current_inclin, current_dist):
+                current_orien, current_inclin, current_dist,
+                curr_nb_infere_trajs):
 
     print('\n\n\n////////////////////////////////////////////////////////////////')
     print('////////////////////////////////////////////////////////////////')
     print('////////////////////////////////////////////////////////////////')
     print('////////////////////////////////////////////////////////////////')
-    print('NEW TRAJ for init_pos', curr_init_pos,
+    print('NEW TRAJ for init_pos', init_pos_coord,
           'effect', expected_effect.upper())
 
-    ''' Move eef to initial position and get position '''
-    res_init_pos = False
-    tries = 0
-    while not res_init_pos and tries <= 3:
-        res_init_pos = ros_services.call_move_to_initial_position(curr_init_pos)
-        tries += 1
-        print("Trying to go to init pose :", tries)
-    if not res_init_pos:
-        print("ERROR - infere_traj : Failed moving to init pos")
-    else:
-        print("MOVED TO INIT POSE !! ")
+#    ''' Restart env '''
+#    if sim_param.exec_traj:
+#        if sim_param.experiment_type != 'a2l_reproduce_dataset':
+#            ''' Restart scenario '''         
+#            success = ros_services.call_restart_world("setup")
+#            if not success:
+#                print("ERROR - restart_world failed")
+#        else:
+#            if curr_nb_infere_trajs == 0:
+#                ''' Restart scenario '''         
+#                success = ros_services.call_restart_world("setup")
+#                if not success:
+#                    print("ERROR - restart_world failed")     
+
+#    ''' Move eef to initial position and get position '''
+#    res_init_pos = False
+#    tries = 0
+#    while not res_init_pos and tries <= 3:
+#        res_init_pos = ros_services.call_move_to_initial_position(init_pos_coord)
+#        tries += 1
+#        print("Trying to go to init pose :", tries)
+#    if not res_init_pos:
+#        print("ERROR - infere_traj : Failed moving to init pos")
+#    else:
+#        print("MOVED TO INIT POSE !! ")
     
     eef_pos = ros_services.call_get_eef_pose('left')
     eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
-    print("eef_pos", eef_pos)
-
-
-    if sim_param.exec_traj:
-        ''' Restart scenario '''         
-        success = ros_services.call_restart_world("setup")
-        if not success:
-            print("ERROR - restart_world failed")
+    print("eef_pos", eef_pos)  
     
     eef_traj_vector = []
     obj_traj_vector = []
@@ -480,17 +572,18 @@ def infere_traj(bn, ie,
     execution_active = True ## still trying to touch object
 #    while execution_active and nb_executed_deltas < sim_param.max_nb_executed_deltas:
         
-    ''' Get obj pos '''
-    initial_obj_pos = [0.65, 0.1, -0.135]
-#    ros_services.call_get_model_state(sim_param.obj_name)
-#    print('initial_obj_pos :', initial_obj_pos)
-    initial_obj_pos = [round(pos, sim_param.round_value) for pos in initial_obj_pos[0:3]]
+#    ''' Get obj pos '''
+#    initial_obj_pos = [0.65, 0.1, -0.135]
+#    initial_obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
+#    initial_obj_pos = [round(pos, sim_param.round_value) for pos in initial_obj_pos[0:3]]
 #    print('initial_obj_pos :', initial_obj_pos)    
 
     traj_tries = 0
-    while not obj_moved or expected_effect != obtained_effect and \
-          traj_tries < sim_param.max_inferred_traj_tries:
+#    while not obj_moved or expected_effect != obtained_effect and \
+#          traj_tries < sim_param.max_inferred_traj_tries:
     
+    while expected_effect != obtained_effect and \
+          traj_tries < sim_param.max_inferred_traj_tries:    
         ''' Simulate trajectory '''
         traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
                                        eef_pos,
@@ -501,88 +594,22 @@ def infere_traj(bn, ie,
                                        current_dist)
     
         ''' Plot simulated traj '''
-        plot_traj_3d(nb_init_pos,
+        plot_traj_3d(init_pos_vector,
                      traj,
                      initial_obj_pos,
-                     curr_init_pos,
+                     init_pos_coord,
                      expected_effect) 
                                        
         ''' Identify effect '''
-        print('positions', initial_obj_pos, final_obj_pos)                                    
+        print('positions', initial_obj_pos, '->', final_obj_pos)                                    
         obtained_effect = env.identify_effect(initial_obj_pos,
                                               final_obj_pos)                                          
         print('expected_effect: ------------->', expected_effect.upper())
         print('obtained_effect: ------------->', obtained_effect.upper())
         
         traj_tries += 1
-
-#    ''' Repeat if bad trajectory '''
-#    ## if not contact produced or wrong effect, create more accurate traj
-#    accuracy_value = 1                                                                                                 
-##    if not moved:
-#    while not obj_moved and accuracy_value <= 3:
-#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-#        print('REPEATING TRAJ! OBJ NOT MOVED')
-#        
-##        raw_input("PRESS KEY TO CONTINUE")
-#        accuracy_value += 1
-#        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
-#                                                   eef_pos,
-#                                                   initial_obj_pos,
-#                                                   expected_effect, 
-#                                                   current_orien,
-#                                                   current_inclin,
-#                                                   current_dist,
-#                                                   accuracy_value) ## accurate level
-#        ''' Plot simulated traj '''
-#        plot_traj_3d(nb_init_pos,
-#                     traj,
-#                     initial_obj_pos,
-#                     curr_init_pos,
-#                     expected_effect)
-#                     
-#        ''' Identify effect '''
-#        print('positions', initial_obj_pos, final_obj_pos)                                    
-#        obtained_effect = env.identify_effect(initial_obj_pos,
-#                                              final_obj_pos)
-#        print('expected_effect: ------------->', expected_effect.upper())
-#        print('obtained_effect:', initial_obj_pos, final_obj_pos,
-#                                  '------------->', obtained_effect.upper())
-#        accuracy_value += 1                                                  
-#                                                   
-##    elif expected_effect != obtained_effect:
-#    while expected_effect != obtained_effect and accuracy_value <= 3:
-#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-#        print('REPEATING TRAJ! WRONG EFFECT', obtained_effect, 'instead of', expected_effect)
-#        
-##        raw_input("PRESS KEY TO CONTINUE")
-#        traj, obj_moved, final_obj_pos = simulate_traj(bn, ie, 
-#                                                   eef_pos,
-#                                                   initial_obj_pos,
-#                                                   expected_effect, 
-#                                                   current_orien,
-#                                                   current_inclin,
-#                                                   current_dist,
-#                                                   accuracy_value) ## accurate level                        
-#        ''' Plot simulated traj '''
-#        plot_traj_3d(nb_init_pos,
-#                     traj,
-#                     initial_obj_pos,
-#                     curr_init_pos,
-#                     expected_effect)
-#                     
-#        ''' Identify effect '''
-#        print('positions', initial_obj_pos, final_obj_pos)                                    
-#        obtained_effect = env.identify_effect(initial_obj_pos,
-#                                              final_obj_pos)                                          
-#        print('expected_effect: ------------->', expected_effect.upper())
-#        print('obtained_effect:', initial_obj_pos, final_obj_pos,
-#                                  '------------->', obtained_effect.upper())  
-#        accuracy_value += 1
     
-    if sim_param.exec_traj:
+    if expected_effect == obtained_effect and sim_param.exec_traj:
         ''' Execute trajectory, listening to feedback '''
         tc = Traj_callback(
                 traj, 
@@ -594,19 +621,21 @@ def infere_traj(bn, ie,
                 nb_executed_deltas)
     
         ## execute trajectory
-        simulated_traj_vector = [i for el in traj for i in el] # [float]
+        simulated_traj_vector = [i for el in traj for i in el] ## [float]
         res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-                                            simulated_traj_vector)
+                                                       simulated_traj_vector)
         if not res_exec:
             print("FAILED EXECUTION IN ROS !! ")
         else:
             print("FINISHED EXECUTION IN ROS !! ")       
              
-    #        while tc.sub_up :
-    #    print('Nb of deltas executed :', tc.nb_executed_deltas)
-    #            import time
-    #            time.sleep(3)
-    #            sys.exit()
+#        while tc.sub_up :
+#            print('Nb of deltas executed :', tc.nb_executed_deltas)
+            
+            
+#        import time
+#        time.sleep(3)
+#        sys.exit()
         
         ''' Values once trajectory execution stopped (but it can continue) '''
         execution_active = (tc.traj_res == '')
@@ -665,7 +694,7 @@ def simulate_traj(bn, ie,
                  round(eef_pos[2], 2)]]
     delta_vector = [] ## [orientation, inclination, distance, next_mov_discr]
     obj_moved = False    
-    delta_nb_var_res = -1
+#    delta_nb_var_res = -1
 #    prev_mov = "close"
     prev_mov_delta = [0,0,0]
     i = 0
@@ -777,13 +806,13 @@ def simulate_traj(bn, ie,
             if tmp_pos[3] > max_prob:
                 max_prob = tmp_pos[3]
                 max_next_move = tmp_pos[2]
-                tmp_i += 1
+            tmp_i += 1
         print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', tmp_i)
         next_mov_discr = max_next_move
 
 
-        if delta_nb_var_res == -1:
-           delta_nb_var_res = delta_nb_var 
+#        if delta_nb_var_res == -1:
+#           delta_nb_var_res = delta_nb_var 
 
 #        if sim_param.debug_infer:
 #            print(expected_effect.upper(),
@@ -817,8 +846,8 @@ def simulate_traj(bn, ie,
         if dims_vector == 0: ## to avoid div by 0 ??? TODOOOOOOOOOOOOOOOOOOOOOOO
             dims_vector = 1
         mov_step = round(sim_param.step_length/sqrt(dims_vector), sim_param.round_value)
-        mov_step = round(mov_step / accurate_level, sim_param.round_value)
-        print('mov_step', mov_step)
+#        mov_step = round(mov_step / accurate_level, sim_param.round_value)
+#        print('mov_step', mov_step)
         if delta_x > 0: #== 1 :
             delta_x = mov_step
         elif delta_x < 0: #== 1 : == -1:
@@ -878,16 +907,17 @@ a
 '''
 
 
-def plot_traj_3d(nb_initial_pos,                 
+def plot_traj_3d(init_pos_vector,                 
                  traj,
                  obj_pos,
-                 curr_init_pos,
+                 init_pos_coord,
                  effect):
 
     # plot figure
     fig = plt.figure()
     fig.clf()
-    fig.canvas.set_window_title(str(curr_init_pos) + '->' + effect)
+#    fig.canvas.set_window_title(str(curr_init_pos) + '->' + effect)
+    fig.canvas.set_window_title('-> ' + effect)
     ax = Axes3D(fig)
 
 #    # table        
@@ -942,14 +972,24 @@ def plot_traj_3d(nb_initial_pos,
     ## All commented = diagonal view
 #            ax2.view_init(90,180) # top view
 #            ax3.view_init(0,0) # front view
-#            ax4.view_init(0,270) # left view
+#    ax.view_init(0,270) # left view
 
-    # plot the big circle points
-    list_x_axis, list_y_axis, list_z_axis = \
-        setup.gen_init_eef(nb_initial_pos,
-                           sim_param.circumference_radio,
-                           obj_pos)
-    list_z_axis = [sim_param.eef_z_value for i in range(len(list_x_axis))]
+    # plot initial position
+#    list_x_axis, list_y_axis, list_z_axis = \
+#        setup.gen_init_eef(nb_initial_pos,
+#                           sim_param.circumference_radio,
+#                           obj_pos)
+#    list_z_axis = [sim_param.eef_z_value for i in range(len(list_x_axis))]
+#    ax.plot(list_x_axis,
+#            list_y_axis,
+#            list_z_axis,
+#            'o',
+#            color='red',
+#            markersize = 5)
+
+    list_x_axis = [pos[0] for pos in init_pos_vector]
+    list_y_axis = [pos[0] for pos in init_pos_vector]
+    list_z_axis = [pos[0] for pos in init_pos_vector]
     ax.plot(list_x_axis,
             list_y_axis,
             list_z_axis,
@@ -1044,6 +1084,7 @@ def infere_mov(bn, ie, node_names, node_values):
     ## get posterior    
     posterior = ie.posterior(bn.idFromName('move'))
 #    if sim_param.debug:
+#    print('\n')
 #    print(posterior)
 #    print(posterior[0])
 #    print(posterior[-1])
@@ -1112,7 +1153,7 @@ def infere_mov(bn, ie, node_names, node_values):
         print("Best posterior of move is", move_value.upper(),\
             "with prob", posterior_value, "in position", posterior_pos, '\n')      
     
-    return move_value, round(posterior_value,3), int(move_nb_var), same_prob
+    return move_value, round(posterior_value, 5), int(move_nb_var), same_prob
     
 #'''
 #Plot new inferred traj
