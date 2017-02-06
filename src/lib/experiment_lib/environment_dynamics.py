@@ -208,14 +208,23 @@ def compute_obj_pos(obj_pos,
         wp = [round(pos, sim_param.round_value) for pos in wp]
         wp_final = [round(pos, sim_param.round_value) for pos in wp_final]
         
-        if wp[0] < wp_final[0] and wp[2] < z_max_value_box: ## far
-            new_box_pos[0] += sim_param.obj_displacement
-        elif wp[0] > wp_final[0] and wp[2] < z_max_value_box: ## close
-            new_box_pos[0] -= sim_param.obj_displacement
-        elif wp[1] > wp_final[1] and wp[2] < z_max_value_box: ## left
-            new_box_pos[1] -= sim_param.obj_displacement
-        elif wp[1] < wp_final[1] and wp[2] < z_max_value_box: ## right
-            new_box_pos[1] += sim_param.obj_displacement
+        ## compute pos variations
+        var_x = abs(wp[0] - wp_final[0])
+        var_y = abs(wp[1] - wp_final[1])
+        var_z = abs(wp[2] - wp_final[2])
+        
+        ## bigger variation reflects move orientation
+        if var_y >= var_x: ## horizontal move
+            if wp[1] > wp_final[1]: ## left
+                new_box_pos[1] -= sim_param.obj_displacement
+            elif wp[1] < wp_final[1]: ## right
+                new_box_pos[1] += sim_param.obj_displacement
+
+        elif var_x >= var_y: ## vertical move        
+            if wp[0] < wp_final[0]: ## far
+                new_box_pos[0] += sim_param.obj_displacement
+            elif wp[0] > wp_final[0]: ## close
+                new_box_pos[0] -= sim_param.obj_displacement        
     
     new_box_pos = [round(pos,sim_param.round_value) for pos in new_box_pos]
     return obj_moved, new_box_pos
@@ -306,11 +315,18 @@ def identify_effect_3d(initial_obj_pos, final_obj_pos):
 Test
 '''
 if __name__ == '__main__':
+    
+    new_pos = compute_obj_pos([0.65,-0.05,-0.14], [0.65, -0.04, -0.13], [0.62, -0.07, -0.15])
+    print(new_pos)
+    
+    print(identify_effect([0.65,-0.05,-0.14], new_pos[1]))
+    
+    
 #    print(identify_effect([-0.3,0,0]))
-    print(identify_effect([0,0,0], [0.3,0,0])) ## far
-    print(identify_effect([0,0,0], [-0.3,0,0])) ## close
-    print(identify_effect([0,0,0], [0,0.3,0])) ## left
-    print(identify_effect([0,0,0], [0,-0.3,0])) ## right
+#    print(identify_effect([0,0,0], [0.3,0,0])) ## far
+#    print(identify_effect([0,0,0], [-0.3,0,0])) ## close
+#    print(identify_effect([0,0,0], [0,0.3,0])) ## left
+#    print(identify_effect([0,0,0], [0,-0.3,0])) ## right
 
 #    print(check_obj_moved([0,0,0], [0,0.5,0],[0,0.01,0])) # to the bottom
 #    print(check_obj_moved([0,0,0], [0,-0.5,0],[0,-0.01,0])) # up

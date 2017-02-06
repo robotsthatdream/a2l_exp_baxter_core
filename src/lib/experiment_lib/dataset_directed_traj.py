@@ -15,6 +15,7 @@ sys.path.append(lib_path)
 import ros_services
 import simulation_parameters as sim_param
 from numpy import linspace
+import copy
 
 def plot_setup():
     
@@ -106,34 +107,35 @@ def plot_traj_eef_obj(ax, pos_rot_vector):
 def create_diverse_trajs(traj,
                          obj_pos,
                          effect):
-    traj_vector = []    
-    for nb_traj in range(nb_diverse_trajs):
+#    traj_vector = []    
+#    for nb_traj in range(nb_diverse_trajs):   
         tmp_traj = [] ## [eef_pos eef_orien obj_pos obj_orien] = [float]
         
         ## initial pos
-        tmp_traj.append(traj[0][0])
-        tmp_traj.append(traj[0][1])
-        tmp_traj.append(traj[0][2])
-        zero_vector = [0,0,0]
+#        tmp_traj.append(traj[0][0])
+#        tmp_traj.append(traj[0][1])
+#        tmp_traj.append(traj[0][2])
+        zero_vector = [0,0,0]        
+#        tmp_traj += zero_vector        
+#        tmp_traj += obj_pos
+#        tmp_traj += zero_vector         
         
-        tmp_traj += zero_vector        
-        tmp_traj += obj_pos
-        tmp_traj += zero_vector         
-        
-        for traj_wp in traj[1:-1]:            
-            orig_traj_x = round(traj_wp[0], sim_param.round_value)
-            orig_traj_y = round(traj_wp[1], sim_param.round_value)
-            orig_traj_z = round(traj_wp[2], sim_param.round_value)
+#        for traj_wp in traj[1:-1]:            
+        for traj_wp in traj:
+            orig_traj_x = round(traj_wp[0], sim_param.round_value+2)
+            orig_traj_y = round(traj_wp[1], sim_param.round_value+2)
+            orig_traj_z = round(traj_wp[2], sim_param.round_value+2)
                         
             ## eef pos
-            tmp_eef_pos = []
-            tmp_eef_pos.append(round(orig_traj_x + random.uniform(-traj_change, traj_change), 
-                                     round_value))
-            tmp_eef_pos.append(round(orig_traj_y + random.uniform(-traj_change, traj_change), 
-                                     round_value))
-            tmp_eef_pos.append(round(orig_traj_z + random.uniform(-traj_change, traj_change), 
-                                     round_value))
-            tmp_traj += tmp_eef_pos
+#            tmp_eef_pos = []
+#            tmp_eef_pos.append(round(orig_traj_x + random.uniform(-traj_change, traj_change), 
+#                                     round_value+2))
+#            tmp_eef_pos.append(round(orig_traj_y + random.uniform(-traj_change, traj_change), 
+#                                     round_value+2))
+#            tmp_eef_pos.append(round(orig_traj_z + random.uniform(-traj_change, traj_change), 
+#                                     round_value+2))
+#            tmp_traj += tmp_eef_pos
+            tmp_traj += [orig_traj_x, orig_traj_y, orig_traj_z]
             
             ## eef_orien                         
             tmp_traj += zero_vector
@@ -142,7 +144,7 @@ def create_diverse_trajs(traj,
             tmp_traj += obj_pos
             tmp_traj += zero_vector
             
-        ## final pos
+        ## final obj pos
         tmp_traj.append(traj[-1][0])
         tmp_traj.append(traj[-1][1])
         tmp_traj.append(traj[-1][2])
@@ -162,8 +164,9 @@ def create_diverse_trajs(traj,
         tmp_traj += zero_vector                     
             
 #        print(nb_traj, tmp_traj)
-        traj_vector.append(tmp_traj)
-    return traj_vector
+#        traj_vector.append(tmp_traj)
+#    return traj_vector
+        return [tmp_traj]
     
 def generate_dataset(effect):
     
@@ -171,39 +174,75 @@ def generate_dataset(effect):
     eef_pos = ros_services.call_get_eef_pose('left')
     eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
     print("eef_pos", eef_pos)
+    orig_eef_pos = copy.copy(eef_pos)
     
     obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
     obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
     print('obj_pos', obj_pos)
     
+    ## all trajs converge into a mid pos
+    mid_pos = copy.copy(obj_pos)
+    mid_pos[1] += 0.1
+    
     traj_vector = []
     traj_diverse_vector = []
     for i in range(nb_init_traj):
-        ## update eef pos
+        eef_pos = copy.copy(orig_eef_pos)
+        ''' Create new inital position '''
         if i != 0:
-            eef_pos_range = sim_param.new_obj_pos_dist / 2
-            eef_pos[0] = eef_pos[0] + random.uniform(-eef_pos_range,eef_pos_range)    
-            eef_pos[0] = eef_pos[0] - random.uniform(-eef_pos_range,eef_pos_range)                                              
+            eef_pos_range = sim_param.new_obj_pos_dist
+            eef_pos[0] = eef_pos[0] + random.uniform(-eef_pos_range,eef_pos_range*2)
+#            eef_pos[0] = eef_pos[0] - random.uniform(,eef_pos_range)                                              
     
-            eef_pos[1] = eef_pos[1] + random.uniform(-eef_pos_range,eef_pos_range)
-            eef_pos[1] = eef_pos[1] - random.uniform(-eef_pos_range,eef_pos_range)
+            eef_pos[1] = eef_pos[1] + random.uniform(-eef_pos_range*2,eef_pos_range*2)
+#            eef_pos[1] = eef_pos[1] - random.uniform(-eef_pos_range,eef_pos_range)
             
             eef_pos[2] = eef_pos[2] + random.uniform(-eef_pos_range,eef_pos_range)
-            eef_pos[2] = eef_pos[2] - random.uniform(-eef_pos_range,eef_pos_range)
+#            eef_pos[2] = eef_pos[2] - random.uniform(-eef_pos_range,eef_pos_range)
             eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]        
     
         ''' Create main traj '''
-        var_x_vector = (linspace(eef_pos[0], obj_pos[0], nb_steps-2)).tolist()
-        var_x_vector = [round(pos, sim_param.round_value) for pos in var_x_vector]
-        var_x_vector = var_x_vector + [var_x_vector[-1]] + [var_x_vector[-1]]
+#        var_x_vector = (linspace(eef_pos[0], obj_pos[0], nb_steps-3)).tolist()
+##        var_x_vector = linspace(eef_pos[0], obj_pos[0], nb_steps)
+#        var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
+#        var_x_vector = var_x_vector + [var_x_vector[-1]] + [var_x_vector[-1]] + [var_x_vector[-1]]
+#        
+#        var_y_vector = linspace(eef_pos[1], obj_pos[1], nb_steps)
+#        var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
+#    #    var_y_vector = [var_y_vector[0]] + var_y_vector    
+#        
+##        var_z = abs(eef_pos[2] - obj_pos[2])
+#        var_z_vector = (linspace(eef_pos[2], obj_pos[2], int(nb_steps/2))).tolist()
+#        var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
+##        var_z_vector = var_z_vector + [var_z_vector[-1]] + [var_z_vector[-1]] + [var_z_vector[-1]] + [var_z_vector[-1]]
+#        var_z_vector_tmp = [obj_pos[2] for i in range(len(var_z_vector),nb_steps)]
+#        var_z_vector += var_z_vector_tmp
+
+        mid_var = traj_change * 5
+        if eef_pos[0] < obj_pos[0]:
+            mid_vax_x = mid_pos[0] + random.uniform(-mid_var,0)
+        else:
+            mid_vax_x = mid_pos[0] + random.uniform(0,mid_var)
+        mid_vax_y = mid_pos[1] + random.uniform(-mid_var,mid_var)
+        mid_vax_z = mid_pos[2] + random.uniform(0,mid_var*2)
         
-        var_y_vector = linspace(eef_pos[1], obj_pos[1], nb_steps)
-        var_y_vector = [round(pos, sim_param.round_value) for pos in var_y_vector]
-    #    var_y_vector = [var_y_vector[0]] + var_y_vector    
+        var_x_vector = (linspace(eef_pos[0], mid_vax_x,
+                        int(nb_steps/2))).tolist()
+        var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
+        var_x_vector_tmp = [mid_vax_x] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]
+        var_x_vector += var_x_vector_tmp
         
-        var_z_vector = (linspace(eef_pos[2], obj_pos[2], nb_steps-3)).tolist()
-        var_z_vector = [round(pos, sim_param.round_value) for pos in var_z_vector]
-        var_z_vector = var_z_vector + [var_z_vector[-1]] + [var_z_vector[-1]] + [var_z_vector[-1]]
+        var_y_vector = (linspace(eef_pos[1], mid_vax_y,
+                        int(nb_steps/2))).tolist()
+        var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
+        var_y_vector_tmp = [mid_vax_y] + (linspace(mid_pos[1], obj_pos[1], int(nb_steps/2))).tolist()[1:]
+        var_y_vector += var_y_vector_tmp
+        
+        var_z_vector = (linspace(eef_pos[2], mid_vax_z,
+                        int(nb_steps/2))).tolist()
+        var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
+        var_z_vector_tmp = [mid_vax_z] + [mid_pos[2] for i in range(len(var_z_vector),nb_steps)][1:]
+        var_z_vector += var_z_vector_tmp
         
         traj = [[var_x_vector[i], var_y_vector[i], var_z_vector[i]] 
                  for i in range(len(var_x_vector))]
@@ -217,10 +256,10 @@ def generate_dataset(effect):
     ax = plot_setup()
     plot_traj(ax, traj_vector)
         
-    ''' Plot new trajs '''
-    ax = plot_setup()
-    for curr_traj in traj_diverse_vector:
-        plot_traj_eef_obj(ax, curr_traj)
+#    ''' Plot new trajs '''
+#    ax = plot_setup()
+#    for curr_traj in traj_diverse_vector:
+#        plot_traj_eef_obj(ax, curr_traj)
         
     plt.show()
 
@@ -230,28 +269,58 @@ def generate_dataset(effect):
 Write the trajs dataset 
 '''     
 def write_dataset(traj_vector):    
-    filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
     file = open(filename, 'w')
     for traj in traj_vector:
         for value in traj:
             file.write(str(value))
             file.write(',')
         file.write('\n')     
+
+''' 
+Read the trajs dataset 
+'''     
+def read_dataset(traj_vector):    
+    lines = open(filename, 'r').readlines()
+    traj_vector = []
+    for line in lines:
+        pos_rot_vector = line[:-2].split(',') ## remove final , and EOL
+        traj = []
+        for pos in range(0, len(pos_rot_vector), 12):
+            current_x = float(pos_rot_vector[pos+0])
+            current_y = float(pos_rot_vector[pos+1])
+            current_z = float(pos_rot_vector[pos+2])
+            traj.append([current_x,
+                         current_y,
+                         current_z])
+        traj_vector.append(traj)
+    
+    return traj_vector
+
     
     
 if __name__ == "__main__":
     
-    nb_diverse_trajs = 20
-    traj_change = 0.025
-    round_value = 2
+    filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'    
     
-    nb_init_traj = 5
-    nb_steps = 12
+    if 1: ## create
     
-    success = ros_services.call_restart_world("setup")
-    if not success:
-        print("ERROR - restart_world failed")
-    
-    traj_vector = generate_dataset('right')
-    res = write_dataset(traj_vector)
+        nb_diverse_trajs = 100
+        traj_change = 0.005
+        round_value = 2
+        
+        nb_init_traj = nb_diverse_trajs
+        nb_steps = 10
+        
+        success = ros_services.call_restart_world("all")
+        if not success:
+            print("ERROR - restart_world failed")
+        
+        traj_vector = generate_dataset('right')
+        res = write_dataset(traj_vector)
+        
+    else: ## plot 
+        traj_vector = read_dataset(filename)
+        ax = plot_setup()
+        plot_traj(ax, traj_vector)
+        
     

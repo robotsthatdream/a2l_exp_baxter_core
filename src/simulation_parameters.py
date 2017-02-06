@@ -9,14 +9,13 @@ import math
 nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
-nb_min_distance_sections = 3
+nb_min_distance_sections = 5
 exec_traj = True
 single_init_pos = True ## if False, circle of init pos around the box
 
 semi_random_trajs = True ## initial trajs using dicretized movs
 discr_hand_coded = False
 discr_random = False
-
 
 ''' Global variables '''
 print_time = False ## print elapsed time for some functions
@@ -27,6 +26,11 @@ round_value = 2
 
 print_prob_table_values = False ## print the CPTs values
 print_unknown_affordances = False ## print name of unknown affordances
+
+''' Debug '''
+debug = False
+debug_infer = True
+debug_services = True
 
 ''' Folder paths '''
 generated_files_folder = 'generated_files/'
@@ -63,11 +67,6 @@ print_discr_random_dataset = False
 test_directed_dataset_extended = False
 test_statistics = False
 
-''' Debug '''
-debug = False
-debug_infer = False
-debug_services = True
-
 ''' Experiment discretization selection'''
 #experiment_type = 'discretization_selection'
 orientation_discr_vector_size = 4
@@ -82,8 +81,8 @@ obj_name = "cube"
 
 ''' Experiment Reproduce dataset '''
 experiment_type = 'a2l_reproduce_dataset'
-nb_infere_trajs = 10
-obj_too_far_distance = 0.6 ## to move it back close to the eef init pos
+nb_infere_trajs = 20
+obj_too_far_distance = 0.35 ## to move it back close to the eef init pos
 new_obj_pos_dist = 0.1 ## for new pos close to init obj pos 
 max_inferred_traj_tries = 1
 
@@ -107,7 +106,7 @@ colormap_values = ['red','yellow','green','black']
 #nb_runs = 1
 fixed_obj_pos = False ## if false random obj pos during validation phase
 #obj_displacement = obj_side
-same_move_value = 0.025
+same_move_value = 0.02
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
 step_length = 0 # obj_side/2 ## online coñputation based on dataset 
 random_max_movs = 7
