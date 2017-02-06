@@ -333,7 +333,7 @@ def infere_trajectories(current_results_folder,
         eef_init_pos = copy.copy(init_pos_vector[0])
         ## X
 #        if obj_pos[0] > eef_init_pos[0]:
-        eef_init_pos[0] = obj_pos[0] + random.uniform(-sim_param.new_obj_pos_dist,
+        eef_init_pos[0] = obj_pos[0] + random.uniform(-sim_param.new_obj_pos_dist*2,
                                            sim_param.new_obj_pos_dist)
 #        elif obj_pos[0] < eef_init_pos[0]: ## can contact the body
 #            eef_init_pos[0] -= random.uniform(-sim_param.new_obj_pos_dist,
@@ -604,11 +604,12 @@ def infere_traj(bn, ie,
                                        current_dist)
     
         ''' Plot simulated traj '''
-        plot_traj_3d(init_pos_vector,
-                     traj,
-                     initial_obj_pos,
-                     init_pos_coord,
-                     expected_effect) 
+        below_box = plot_traj_3d(init_pos_vector,
+                                 traj,
+                                 initial_obj_pos,
+                                 init_pos_coord,
+                                 expected_effect)                                  
+        print('below_box:', below_box)
                                        
         ''' Identify effect '''
         print('positions', initial_obj_pos, '->', final_obj_pos)                                    
@@ -631,14 +632,18 @@ def infere_traj(bn, ie,
                 expected_effect, obtained_effect,
                 nb_executed_deltas)
     
-        ## execute trajectory
-        simulated_traj_vector = [i for el in traj for i in el] ## [float]
-        res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-                                                       simulated_traj_vector)
-        if not res_exec:
-            print("FAILED EXECUTION IN ROS !! ")
+        ## avoid touching table in REAL ROBOT
+        if sim_param.real_robot and not below_box:    
+            ## execute trajectory
+            simulated_traj_vector = [i for el in traj for i in el] ## [float]
+            res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
+                                                           simulated_traj_vector)
+            if not res_exec:
+                print("FAILED EXECUTION IN ROS !! ")
+            else:
+                print("FINISHED EXECUTION IN ROS !! ")       
         else:
-            print("FINISHED EXECUTION IN ROS !! ")       
+            print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
              
 #        while tc.sub_up :
 #            print('Nb of deltas executed :', tc.nb_executed_deltas)
@@ -1005,8 +1010,8 @@ def plot_traj_3d(init_pos_vector,
     ## view
     ## All commented = diagonal view
 #    ax.view_init(90,180) # top view
-    ax.view_init(0,0) # front view
-#    ax.view_init(0,270) # left view
+#    ax.view_init(0,0) # front view
+    ax.view_init(0,270) # left view
 
     # plot initial position
 #    list_x_axis, list_y_axis, list_z_axis = \
@@ -1035,6 +1040,13 @@ def plot_traj_3d(init_pos_vector,
     eef_pos_vector_x = [pos[0] for pos in traj]
     eef_pos_vector_y = [pos[1] for pos in traj]
     eef_pos_vector_z = [pos[2] for pos in traj]
+    
+    z_under_object = False
+    pos = 0
+    while not z_under_object and pos < len(eef_pos_vector_z):
+        z_under_object = eef_pos_vector_z[pos] < -0.17
+        pos += 1
+    
     ax.plot(eef_pos_vector_x, 
             eef_pos_vector_y, 
             eef_pos_vector_z,
@@ -1048,7 +1060,8 @@ def plot_traj_3d(init_pos_vector,
             c='grey')
         
     plt.show()
-#    plt.close()
+
+    return z_under_object
 
 
 '''

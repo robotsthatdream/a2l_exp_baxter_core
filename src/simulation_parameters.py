@@ -6,6 +6,9 @@
 import math
 
 ''' Main parameters '''
+
+real_robot = True
+
 nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8

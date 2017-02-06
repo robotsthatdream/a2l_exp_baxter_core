@@ -302,7 +302,7 @@ if __name__ == "__main__":
     
     filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'    
     
-    if 1: ## create
+    if 0: ## create
     
         nb_diverse_trajs = 100
         traj_change = 0.005
