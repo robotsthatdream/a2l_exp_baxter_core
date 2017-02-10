@@ -256,13 +256,13 @@ def plot_dataset_stats(filename):
     dataset_values = Effect_values()                
     lines = open(filename, 'r').readlines()
     v_max = len(lines)/10
-    for line in lines[1:]:
-        if not sim_param.distance_param:
-            effect, orien, inclin, move = line[:-1].split(',')            
-            dataset_values.add_effect_value(effect, orien, inclin, move)
-        else:
-            effect, orien, inclin, move, dist = line[:-1].split(',')
-            dataset_values.add_effect_value(effect, orien, inclin, move, dist)
+#    for line in lines[1:]:
+#        if not sim_param.distance_param:
+#            effect, orien, inclin, move = line[:-1].split(',')            
+#            dataset_values.add_effect_value(effect, orien, inclin, move)
+#        else:
+#            effect, orien, inclin, move, dist = line[:-1].split(',')
+#            dataset_values.add_effect_value(effect, orien, inclin, move, dist)
 
 #    dataset_values.print_me()
 #    dataset_values.print_stats(v_max)  

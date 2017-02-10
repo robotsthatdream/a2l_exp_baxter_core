@@ -115,7 +115,7 @@ def create_diverse_trajs(traj,
 #        tmp_traj.append(traj[0][0])
 #        tmp_traj.append(traj[0][1])
 #        tmp_traj.append(traj[0][2])
-        zero_vector = [0,0,0]        
+        zero_vector = [0,0,0]
 #        tmp_traj += zero_vector        
 #        tmp_traj += obj_pos
 #        tmp_traj += zero_vector         
@@ -141,8 +141,13 @@ def create_diverse_trajs(traj,
             tmp_traj += zero_vector
             
             ## obj pos and orientation
-            tmp_traj += obj_pos
-            tmp_traj += zero_vector
+            for obj_id in range(len(sim_param.obj_name_vector)):
+                if obj_id==0:
+                    tmp_traj += obj_pos
+                    tmp_traj += zero_vector
+                else:
+                    tmp_traj += pos_cylinder
+                    tmp_traj += [2,2,2]
             
         ## final obj pos
         tmp_traj.append(traj[-1][0])
@@ -162,6 +167,8 @@ def create_diverse_trajs(traj,
         tmp_obj_pos = [x+y for x,y in zip(obj_pos, displ_vector)]
         tmp_traj += tmp_obj_pos
         tmp_traj += zero_vector                     
+        tmp_traj += pos_cylinder
+        tmp_traj += [2,2,2]
             
 #        print(nb_traj, tmp_traj)
 #        traj_vector.append(tmp_traj)
@@ -170,13 +177,13 @@ def create_diverse_trajs(traj,
     
 def generate_dataset(effect):
     
-    ''' Get obj end eef states '''
+    ''' Get obj and eef states '''
     eef_pos = ros_services.call_get_eef_pose('left')
     eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
     print("eef_pos", eef_pos)
     orig_eef_pos = copy.copy(eef_pos)
     
-    obj_pos = ros_services.call_get_model_state(sim_param.obj_name)
+    obj_pos = ros_services.call_get_model_state(sim_param.obj_name_vector[0])
     obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
     print('obj_pos', obj_pos)
     
@@ -301,9 +308,10 @@ def read_dataset(traj_vector):
 if __name__ == "__main__":
     
     filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'    
+    pos_cylinder = [0.75,-0.1,-0.13]
     
-    if 0: ## create
-    
+    if 1: ## create
+        print('GENERATING DATASET')
         nb_diverse_trajs = 100
         traj_change = 0.005
         round_value = 2
@@ -318,7 +326,8 @@ if __name__ == "__main__":
         traj_vector = generate_dataset('right')
         res = write_dataset(traj_vector)
         
-    else: ## plot 
+    else: ## plot
+        print('VISUALIZING DATASET')
         traj_vector = read_dataset(filename)
         ax = plot_setup()
         plot_traj(ax, traj_vector)

@@ -82,6 +82,7 @@ def discretize_trajs(delta_vector,
         current_delta = delta_vector[nb_delta]
 #        print('\n\nnb_delta', nb_delta)        
 #        current_delta.print_me()
+
         
         ''' Compute move '''
         move = discr_move.compute_move_discr(
@@ -92,47 +93,53 @@ def discretize_trajs(delta_vector,
                      current_delta.get_wp_final().get_y(),
                      current_delta.get_wp_final().get_z()])
 
-        if move != 'zero': 
-    
-            ''' Compute orientation ''' 
-            orientation = discr_orien.compute_orientation_discr(
-                             [current_delta.get_wp_init().get_x(),
-                             current_delta.get_wp_init().get_y()],
-                             [current_delta.get_obj_init().get_x(),
-                             current_delta.get_obj_init().get_y()],
-                             current_orien_discr)
-                             
-            ''' Compute inclination ''' 
-            inclination = discr_inclin.compute_inclination_discr(
-                             [current_delta.get_obj_init().get_x(),
-                             current_delta.get_obj_init().get_y(),
-                             current_delta.get_obj_init().get_z()],
+        if move != 'zero':
+            discr_delta_values = [current_delta.get_effect(), move]        
+            for obj_id in range(len(sim_param.obj_name_vector)):
+                
+                ''' Compute orientation ''' 
+                orientation = discr_orien.compute_orientation_discr(
+                                 [current_delta.get_wp_init().get_x(),
+                                 current_delta.get_wp_init().get_y()],
+                                 current_delta.get_obj_init(obj_id),
+    #                             [current_delta.get_obj_init().get_x(),
+    #                             current_delta.get_obj_init().get_y()],
+                                 current_orien_discr)                                 
+                ''' Compute inclination ''' 
+                inclination = discr_inclin.compute_inclination_discr(
+#                                 [current_delta.get_obj_init().get_x(),
+#                                 current_delta.get_obj_init().get_y(),
+#                                 current_delta.get_obj_init().get_z()],
+                                 current_delta.get_obj_init(obj_id),                
+                                 [current_delta.get_wp_init().get_x(),
+                                 current_delta.get_wp_init().get_y(),
+                                 current_delta.get_wp_init().get_z()],                             
+                                 current_inclin_discr)    
+                ''' Compute distance '''
+                distance = discr_dist.compute_distance(
                              [current_delta.get_wp_init().get_x(),
                              current_delta.get_wp_init().get_y(),
-                             current_delta.get_wp_init().get_z()],                             
-                             current_inclin_discr)
-
-
-            ''' Compute distance '''
-            distance = discr_dist.compute_distance(
-                         [current_delta.get_wp_init().get_x(),
-                         current_delta.get_wp_init().get_y(),
-                         current_delta.get_wp_init().get_z()],
-                         [current_delta.get_obj_init().get_x(),
-                         current_delta.get_obj_init().get_y(),
-                         current_delta.get_obj_init().get_z()], ## to remove Z coord
-                         current_dist_discr)
-                         
+                             current_delta.get_wp_init().get_z()],
+#                             [current_delta.get_obj_init().get_x(),
+#                             current_delta.get_obj_init().get_y(),
+#                             current_delta.get_obj_init().get_z()],
+                             current_delta.get_obj_init(obj_id),                             
+                             current_dist_discr)            
+                discr_delta_values = discr_delta_values + [distance, orientation, inclination]
+                                          
 #            print([current_delta.get_effect(), 
 #                   orientation,
 #                   inclination,
 #                   move,
 #                   distance])
-            discr_dataset_vector.append([current_delta.get_effect(), 
-                                         orientation,
-                                         inclination,
-                                         move,
-                                         distance])
+#            discr_dataset_vector.append([current_delta.get_effect(), 
+#                                         orientation,
+#                                         inclination,
+#                                         move,
+#                                         distance])
+        
+        print(discr_delta_values)
+        discr_dataset_vector.append(discr_delta_values)
         nb_delta += 1    
     
     return discr_dataset_vector
@@ -142,28 +149,21 @@ Save the discretized deltas composing the trajectories
 '''
 def save_discr_deltas(dataset_filename, discr_delta_vector):
     ''' Write the trajs discretized dataset '''
-    if not sim_param.distance_param :
-        file = open(dataset_filename, 'w')    
-        file.write('effect')
+    file = open(dataset_filename, 'w')    
+    file.write('effect')
+    file.write(',')
+    file.write('move')
+    file.write(',')
+    
+    for obj_id in range(len(sim_param.obj_name_vector)):
+        file.write('distance'+str(obj_id))
         file.write(',')
-        file.write('orientation')
+        file.write('orientation'+str(obj_id))
         file.write(',')
-        file.write('inclination')
-        file.write(',')        
-        file.write('move')
-        file.write('\n')    
-    else:
-        file = open(dataset_filename, 'w')    
-        file.write('effect')
-        file.write(',')
-        file.write('orientation')
-        file.write(',')
-        file.write('inclination')
-        file.write(',')          
-        file.write('move')
-        file.write(',')
-        file.write('distance')        
-        file.write('\n')     
+        file.write('inclination'+str(obj_id))
+        if obj_id != len(sim_param.obj_name_vector)-1:
+            file.write(',')
+    file.write('\n')     
     
     traj_pos = 0
     for discr_delta in discr_delta_vector:

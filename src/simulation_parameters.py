@@ -80,14 +80,16 @@ distance_discr_vector_size = 3
 plot_dataset_size_score = True ## plot the score in the dataset size plots
 nb_dataset_sizes = 1 ## number of increments of init pos : 8->16->32->64
 eef_z_value = 0.11
-obj_name = "cube"
+
 
 ''' Experiment Reproduce dataset '''
 experiment_type = 'a2l_reproduce_dataset'
-nb_infere_trajs = 20
+experiment_version = 'intermediate_state'
+nb_infere_trajs = 1
 obj_too_far_distance = 0.35 ## to move it back close to the eef init pos
 new_obj_pos_dist = 0.1 ## for new pos close to init obj pos 
 max_inferred_traj_tries = 1
+first_obj_pos = [0.65, 0, -0.13]
 
 ''' ROS execution '''
 feedback_topic = '/a2l/traj_exec_info'
@@ -98,6 +100,7 @@ obj_moved_threshold = 0.1
 inferred_traj = []
 
 ''' Experiment set-up values '''
+obj_name_vector = ["cube", 'cylinder'] ## first iteraction with first object 
 untucked_left_eef_pos = [0.58, 0.18, 0.11]
 ########### TODO RIGHTTTTTTTTTTTTTTTTTTTT INIT POS
 obj_side = 0.1

@@ -87,7 +87,7 @@ def basic_learning_dataset_size(dataset_type_vector,
             if dataset_type == 'random': ## remove the very small deltas
                 nb_removed = 0
                 for discr_delta in discr_delta_vector:
-                    if discr_delta[2] == 'zero':
+                    if discr_delta[1] == 'zero':
                         discr_delta_vector.remove(discr_delta)
                         nb_removed += 1
                 if nb_removed > 0:

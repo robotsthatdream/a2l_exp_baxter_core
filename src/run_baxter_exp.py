@@ -147,7 +147,7 @@ if __name__ == "__main__":
     ros_services.update_nb_init_pos()
     
     ''' Select obj position during inference ''' 
-    model_state = ros_services.call_get_model_state(sim_param.obj_name)
+    model_state = ros_services.call_get_model_state(sim_param.obj_name_vector[0])
     initial_obj_pos = model_state[0:3]
 
     '''  Run experiment to select the dicretization configuration'''    

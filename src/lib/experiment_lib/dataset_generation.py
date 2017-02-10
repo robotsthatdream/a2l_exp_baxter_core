@@ -51,53 +51,69 @@ def create_dataset(dataset_type, nb_initial_pos):
 
 '''
 Read trajs of externally generated dataset
+traj = [EP EO OP1 OO1 OP2 OO2 etc]
+EP = x y z
+EO = roll pitch yaw
+OPi = x y z
+OOi = roll pitch yaw
 '''
 def read_dataset(filename):
     mean_move_size = 0
     nb_moves = 0
     delta_vector = []
     lines = open(filename, 'r').readlines()
-    for line in lines:
+    for line in lines:        
         current_delta_vector = []
         pos_rot_vector = line[:-2].split(',') ## remove final , and EOL
+        nb_obj = len(sim_param.obj_name_vector)
+        
         obj_initial_pos = [float(pos_rot_vector[6]),
                            float(pos_rot_vector[7]),
                            float(pos_rot_vector[8])]
-        obj_final_pos = [float(pos_rot_vector[-6]),
-                         float(pos_rot_vector[-5]),
-                         float(pos_rot_vector[-4])]
+        obj_final_pos = [float(pos_rot_vector[-6 -6*(nb_obj-1)]),
+                         float(pos_rot_vector[-5 -6*(nb_obj-1)]),
+                         float(pos_rot_vector[-4 -6*(nb_obj-1)])]
         obtained_effect = env.identify_effect_3d(obj_initial_pos,
                                                  obj_final_pos)
-#        print('Nb WPs', len(pos_rot_vector)//12)
-        for pos in range(0, len(pos_rot_vector)-12, 12):
+        
+        related_info_size = 6 + 6*nb_obj
+        for pos in range(0, len(pos_rot_vector)-related_info_size, related_info_size):
             current_x = float(pos_rot_vector[pos+0])
             current_y = float(pos_rot_vector[pos+1])
             current_z = float(pos_rot_vector[pos+2])
             
-            next_x = float(pos_rot_vector[pos+12+0])
-            next_y = float(pos_rot_vector[pos+12+1])
-            next_z = float(pos_rot_vector[pos+12+2])
+            next_x = float(pos_rot_vector[pos+related_info_size+0])
+            next_y = float(pos_rot_vector[pos+related_info_size+1])
+            next_z = float(pos_rot_vector[pos+related_info_size+2])
             
             mean_move_size += d.euclidean([current_x, current_y, current_z],
                                           [next_x, next_y, next_z])
             nb_moves += 1
-            
-            current_obj_pos_x = float(pos_rot_vector[pos+6+0])
-            current_obj_pos_y = float(pos_rot_vector[pos+6+1])
-            current_obj_pos_z = float(pos_rot_vector[pos+6+2])
-            
-            next_obj_pos_x = float(pos_rot_vector[pos+18+0])
-            next_obj_pos_y = float(pos_rot_vector[pos+18+1])
-            next_obj_pos_z = float(pos_rot_vector[pos+18+2])            
-            
+
+            current_next_obj_pos_vector = []
+            for curr_obj_id in range(1,len(sim_param.obj_name_vector)+1):
+                
+                current_obj_pos_x = float(pos_rot_vector[pos+6*curr_obj_id+0])
+                current_obj_pos_y = float(pos_rot_vector[pos+6*curr_obj_id+1])
+                current_obj_pos_z = float(pos_rot_vector[pos+6*curr_obj_id+2])
+                
+                next_obj_pos_x = float(pos_rot_vector[pos+related_info_size+6*curr_obj_id+0])
+                next_obj_pos_y = float(pos_rot_vector[pos+related_info_size+6*curr_obj_id+1])
+                next_obj_pos_z = float(pos_rot_vector[pos+related_info_size+6*curr_obj_id+2])            
+
+                current_next_obj_pos = [current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
+                                        next_obj_pos_x, next_obj_pos_y, next_obj_pos_z]
+                current_next_obj_pos_vector.append(current_next_obj_pos)
+                
             current_delta = delta.Delta(
                 obtained_effect,
                 current_x,current_y,current_z,
                 next_x, next_y,next_z,
-#                obj_initial_pos[0], obj_initial_pos[1],obj_initial_pos[2],
-                current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
-                next_obj_pos_x, next_obj_pos_y, next_obj_pos_z,
-                True) ## Extended trajs are always moving the obj            
+                current_next_obj_pos_vector)
+                                
+#                current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
+#                next_obj_pos_x, next_obj_pos_y, next_obj_pos_z,
+#                True) ## Extended trajs are always moving the obj            
             current_delta_vector.append(current_delta)
         delta_vector += current_delta_vector
         
