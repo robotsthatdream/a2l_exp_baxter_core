@@ -21,11 +21,12 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Circle
 import mpl_toolkits.mplot3d.art3d as art3d
 import numpy as np
+from scipy.linalg import norm
 
 def plot_setup():
     
     # plot figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(7,7))
     fig.clf()
     ax = Axes3D(fig)
     
@@ -52,37 +53,47 @@ def plot_setup():
              
              
     if push_cylinder:
-    # cylinder
-        obj_pos = pos_cylinder
-        radius = 0.035
+        ## http://stackoverflow.com/questions/39822480/plotting-a-solid-cylinder-centered-on-a-plane-in-matplotlib
         height = 0.09
-        elevation = -0.17
-        resolution = 100
-        color_cylinder = 'blue'
-        x_center = obj_pos[0]
-        y_center = obj_pos[1]
-        x = np.linspace(x_center-radius, x_center+radius, resolution)
-        z = np.linspace(elevation, elevation+height, resolution)
-        X, Z = np.meshgrid(x, z)
-        Y = np.sqrt(radius**2 - (X - x_center)**2) + y_center # Pythagorean theorem
-        ax.plot_surface(X, Y, Z, linewidth=0, color=color_cylinder)
-        ax.plot_surface(X, (2*y_center-Y), Z, linewidth=0, color=color_cylinder)
-        floor = Circle((x_center, y_center), radius, color=color_cylinder)
-        ax.add_patch(floor)
-        art3d.pathpatch_2d_to_3d(floor, z=elevation, zdir="z")
-        ceiling = Circle((x_center, y_center), radius, color=color_cylinder)
-        ax.add_patch(ceiling)
-        art3d.pathpatch_2d_to_3d(ceiling, z=elevation+height, zdir="z")        
+        obj_pos = pos_cylinder
+        p0 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] - height/2]) #point at one end
+        p1 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] + height/2]) #point at other end
+        R = 0.035
+        v = p1 - p0
+        mag = norm(v)
+        v = v / mag
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        n1 = np.cross(v, not_v)
+        n1 /= norm(n1)
+        n2 = np.cross(v, n1)
+        t = np.linspace(0, mag, 2)
+        theta = np.linspace(0, 2 * np.pi, 100)
+        rsample = np.linspace(0, R, 2)
+        t, theta2 = np.meshgrid(t, theta)
+        rsample,theta = np.meshgrid(rsample, theta)
+        # "Tube"
+        X, Y, Z = [p0[i] + v[i] * t + R * np.sin(theta2) * n1[i] + R * np.cos(theta2) *       n2[i] for i in [0, 1, 2]]
+        # "Bottom"
+        X2, Y2, Z2 = [p0[i] + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
+        # "Top"
+        X3, Y3, Z3 = [p0[i] + v[i]*mag + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]        
+        ax.plot_surface(X, Y, Z, color='blue', linewidth=0, alpha=0.2)
+        ax.plot_surface(X2, Y2, Z2, color='blue', linewidth=0, alpha=0.2)
+        ax.plot_surface(X3, Y3, Z3, color='blue', linewidth=0, alpha=0.2)
+      
 
     # limits
+    obj_pos = pos_cube
     lim = .3
     ax.set_xlim3d([obj_pos[0]-lim, obj_pos[0]+lim])
     ax.set_ylim3d([obj_pos[1]-lim, obj_pos[1]+lim])
     ax.set_zlim3d([obj_pos[2]-lim, obj_pos[2]+lim])
     
     # labels
-    plt.xlabel('xlabel')
-    plt.ylabel('ylabel')
+    plt.xlabel('x-axis')
+    plt.ylabel('y-axis')
 
     return ax
 
