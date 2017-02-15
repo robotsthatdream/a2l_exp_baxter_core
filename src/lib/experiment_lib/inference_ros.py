@@ -331,6 +331,7 @@ def infere_trajectories(current_results_folder,
     print('////////////////////////////////////////////////////////////////')
     print('////////////////////////////////////////////////////////////////')
     print('////////////////////////////////////////////////////////////////')                            
+    print('///////////////////// TRAJECTORY', curr_nb_infere_trajs + 1)
                             
     ## to infer next move
     ie = agrum.LazyPropagation(bn) 
@@ -367,25 +368,28 @@ def infere_trajectories(current_results_folder,
     print(' ')    
     
     ''' Restart env '''
-    if sim_param.exec_traj:
-        if sim_param.experiment_type != 'a2l_reproduce_dataset':
+#    if sim_param.exec_traj:
+    if sim_param.experiment_type != 'a2l_reproduce_dataset':
+        ''' Restart scenario '''         
+        success = ros_services.call_restart_world("all")
+        if not success:
+            print("ERROR - restart_world failed")
+    else:
+        if curr_nb_infere_trajs == 0:
             ''' Restart scenario '''         
             success = ros_services.call_restart_world("all")
             if not success:
-                print("ERROR - restart_world failed")
-        else:
-            if curr_nb_infere_trajs == 0:
-                ''' Restart scenario '''         
-                success = ros_services.call_restart_world("all")
-                if not success:
-                    print("ERROR - restart_world failed")    
+                print("ERROR - restart_world failed")    
 
     ''' Get all object pos'''
     obj_pos_dict = OrderedDict()
     for obj_name in sim_param.obj_name_vector:
         obj_pos = ros_services.call_get_model_state(obj_name)
         obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
-        obj_pos[2] = -0.13
+        if obj_name == 'cube':
+            obj_pos[2] = -0.15
+        else:
+            obj_pos[2] = -0.14
         obj_pos_dict[obj_name] = obj_pos
         
     ''' Get first obj pos to compute eef initial pos'''
@@ -397,12 +401,11 @@ def infere_trajectories(current_results_folder,
 
     ######################################################################################################3
     ## TODO THIS SHOULD BE IN A DIFFERENT FUNCTION
-    ## From secon iteration
+    ## From second iteration
     if sim_param.experiment_type == 'a2l_reproduce_dataset' and curr_nb_infere_trajs > 0:
         ''' Update initial eef pos '''
         eef_init_pos = ros_services.call_get_eef_pose('left')
-        eef_init_pos = [round(pos, sim_param.round_value) for pos in eef_init_pos[0:3]]
-        print("eef_init_pos", eef_init_pos)  
+        eef_init_pos = [round(pos, sim_param.round_value) for pos in eef_init_pos[0:3]]          
     
         ## eef init pos is related to obj pos    
         eef_init_pos = copy.copy(init_pos_vector[0])
@@ -414,10 +417,11 @@ def infere_trajectories(current_results_folder,
             eef_init_pos[1] = eef_init_pos[1] + random.uniform(-sim_param.new_obj_pos_dist/2,0)
         eef_init_pos[2] = eef_init_pos[2] + random.uniform(-sim_param.new_obj_pos_dist/2,0)
 
-        res_init_pos = ros_services.call_move_to_initial_position(eef_init_pos)
+        res_init_pos = ros_services.call_move_to_initial_position(eef_init_pos)        
         ## TODO check result        
+        print("eef_init_pos", eef_init_pos)
         
-        ''' Move first object close to eef '''
+        ''' Change pos first object close to eef '''
         ## if obj too far from end_effector put it around the center of the table
         ## and the eef close 
 #        ''' Get obj pos '''
@@ -440,7 +444,8 @@ def infere_trajectories(current_results_folder,
                                                            sim_param.new_obj_pos_dist),
                            new_obj_pos[1] + random.uniform(-sim_param.new_obj_pos_dist,
                                                            sim_param.new_obj_pos_dist),
-                           -0.13]
+#                           -0.14]
+                           new_obj_pos[2]]
             new_obj_pos = [round(pos, sim_param.round_value) for pos in new_obj_pos]
             obj_pos = copy.copy(new_obj_pos)
             
@@ -455,9 +460,11 @@ def infere_trajectories(current_results_folder,
             for obj_name in sim_param.obj_name_vector[1:]:
                 if obj_name == 'cylinder':
                     obj_pos_dict[obj_name] = \
-                        [new_obj_pos[0] + sim_param.new_obj_pos_dist*2,
-                         new_obj_pos[1] - sim_param.new_obj_pos_dist*2,
-                         new_obj_pos[2]]            
+                        [new_obj_pos[0] + sim_param.new_obj_pos_dist,
+                         new_obj_pos[1] - sim_param.new_obj_pos_dist,
+                         -0.14]
+
+#                         new_obj_pos[2]]      
                     ## move obj to new pos    
                     success = ros_services.call_restart_world("object",
                                                       obj_name,
@@ -648,8 +655,14 @@ def infere_traj(bn, ie,
 ##                nb_executed_deltas,
 #                below_box)
     
+        correct_traj = True    
+    
         ## avoid touching table in REAL ROBOT
-        if sim_param.real_robot and not below_box:    
+        if sim_param.real_robot and below_box:
+            correct_traj = False
+            print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
+
+        if correct_traj:            
             ## execute trajectory
             simulated_traj_vector = [i for el in traj for i in el] ## [float]
             res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
@@ -657,9 +670,7 @@ def infere_traj(bn, ie,
             if not res_exec:
                 print("FAILED EXECUTION IN ROS !! ")
             else:
-                print("FINISHED EXECUTION IN ROS !! ")       
-        else:
-            print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
+                print("FINISHED EXECUTION IN ROS !! ")                   
          
 #    while tc.sub_up :
 #        print('Nb of deltas executed :', tc.nb_executed_deltas)
@@ -783,7 +794,6 @@ def simulate_traj(bn, ie,
             node_values = [expected_effect]
             obj_id = 0
             for obj_name in sim_param.obj_name_vector:                                
-
                 distance = discr_dist.compute_distance(
                     [current_eef_x_tmp,current_eef_y_tmp], 
                     obj_pos_dict[obj_name],
@@ -839,20 +849,25 @@ def simulate_traj(bn, ie,
             print('-------------------------------> SAME PROB', 
                   virt_inference_vector[0][-1])
             if virt_inference_vector[0][-1] == 0:
-                print('-------------------------------> NO MOVE INFERRED', )
+                print('-------------------------------> NO MOVE INFERRED')
+                print(node_values)
                 return eef_traj, False, ''
+
+        print(node_values)
                 
         ## MOVE 
         ## with higher prob    
         max_prob = virt_inference_vector[0][3]
         max_next_move = virt_inference_vector[0][2]
-        tmp_i = 0
-        for tmp_pos in virt_inference_vector[1:]:
-            if tmp_pos[3] > max_prob:
-                max_prob = tmp_pos[3]
-                max_next_move = tmp_pos[2]
+        max_pos = 0
+        tmp_i = 1
+        for tmp_infer_values in virt_inference_vector[1:]:
+            if tmp_infer_values[3] > max_prob:
+                max_prob = tmp_infer_values[3]
+                max_next_move = tmp_infer_values[2]
+                max_pos = tmp_i
             tmp_i += 1
-        print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', tmp_i)
+        print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', max_pos)
         next_mov_discr = [max_next_move]
 
 #        if sim_param.debug_infer:
@@ -927,34 +942,26 @@ def simulate_traj(bn, ie,
 #                        [current_eef_x,current_eef_y,current_eef_z], 
 #                        [next_eef_x,next_eef_y,next_eef_z])
         obj_moved_pose_dict = OrderedDict()
-        for obj_name in sim_param.obj_name_vector:
+        for obj_name in sim_param.moved_obj_name_vector:
             obj_pos = obj_pos_dict[obj_name]
             obj_moved, obj_moved_pose = \
                 env.compute_obj_pos(
                     obj_pos,
                     [current_eef_x,current_eef_y,current_eef_z], 
                     [next_eef_x,next_eef_y,next_eef_z])
-            obj_moved_pose_dict[obj_name] = obj_pos
+            obj_moved_pose_dict[obj_name] = (obj_moved,obj_pos)
 
-        print("obj_moved :", obj_moved)
-        print(' ')
-        prev_mov_delta = [delta_x,
-                          delta_y,
-                          delta_z]
+        tmp_all_obj_moved = True
+        for name, moved in obj_moved_pose_dict.items():
+            print(name, "moved ? :", moved[0])
+            tmp_all_obj_moved = tmp_all_obj_moved and moved[0]
+        all_obj_moved = tmp_all_obj_moved
+#        prev_mov_delta = [delta_x,
+#                          delta_y,
+#                          delta_z]
         i += 1
         
         ## end delta
-    
-    ## TODO to improve moving object ??
-    if obj_moved:
-        last_wp = eef_traj[-1]
-        repeat_x = round(last_wp[0] + delta_x + prev_mov_delta[0]/2, sim_param.round_value)
-        repeat_y = round(last_wp[1] + delta_x + prev_mov_delta[1]/2, sim_param.round_value)
-        repeat_z = round(last_wp[2] + delta_x + prev_mov_delta[2]/2, sim_param.round_value)
-        
-        eef_traj.append([repeat_x,
-                         repeat_y,
-                         repeat_z])
 
     return eef_traj, all_obj_moved, obj_moved_pose
 
@@ -983,10 +990,10 @@ def plot_traj_3d(init_pos_vector,
     
     # box init_pos
     obj_pos = obj_pos_dict['cube']
-    ax.bar3d(obj_pos[0] - sim_param.obj_side/2, 
-             obj_pos[1] - sim_param.obj_side/2, 
-             obj_pos[2] - sim_param.obj_side/2, 
-             [.07], [.085], [.08], 
+    ax.bar3d(obj_pos[0] - 0.085/2, 
+             obj_pos[1] - 0.07/2, 
+             obj_pos[2] - 0.08/2 + 0.02, 
+             [.085], [.07], [.08], 
              color='green',
              alpha=0.2,
              edgecolor='none')             
@@ -1012,7 +1019,7 @@ def plot_traj_3d(init_pos_vector,
     obj_pos = obj_pos_dict['cylinder']
     radius = 0.035
     height = 0.09
-    elevation = -0.14
+    elevation = -0.17
     resolution = 100
     color_cylinder = 'blue'
     x_center = obj_pos[0]
@@ -1051,7 +1058,7 @@ def plot_traj_3d(init_pos_vector,
     ## All commented = diagonal view
 #    ax.view_init(90,180) # top view
 #    ax.view_init(0,0) # front view
- #   ax.view_init(0,270) # left view
+    ax.view_init(0,270) # left view
 
     # plot initial position
     list_x_axis = [pos[0] for pos in init_pos_vector]

@@ -17,24 +17,26 @@ import simulation_parameters as sim_param
 from numpy import linspace
 import copy
 
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import Circle
+import mpl_toolkits.mplot3d.art3d as art3d
+import numpy as np
+
 def plot_setup():
     
     # plot figure
     fig = plt.figure()
     fig.clf()
     ax = Axes3D(fig)
-
-    obj_pos = [0.65, 0, -0.14]
-    obj_side = 0.1
     
     # box init_pos
-    ax.bar3d(obj_pos[0] - obj_side/2, 
-             obj_pos[1] - obj_side/2, 
-             obj_pos[2] - obj_side/2, 
-             [.1], [.1], [.1], 
-             color='lightgrey',
+    ax.bar3d(pos_cube[0] - 0.085/2, 
+             pos_cube[1] - 0.07/2, 
+             pos_cube[2] - 0.08/2, 
+             [.085], [.07], [.08], 
+             color='green',
              alpha=0.2,
-             edgecolor='none')
+             edgecolor='none')             
 
     # robot
     robot_width = .2
@@ -47,6 +49,30 @@ def plot_setup():
              color='lightgrey',
              alpha=0.2,
              edgecolor='none')
+             
+             
+    if push_cylinder:
+    # cylinder
+        obj_pos = pos_cylinder
+        radius = 0.035
+        height = 0.09
+        elevation = -0.17
+        resolution = 100
+        color_cylinder = 'blue'
+        x_center = obj_pos[0]
+        y_center = obj_pos[1]
+        x = np.linspace(x_center-radius, x_center+radius, resolution)
+        z = np.linspace(elevation, elevation+height, resolution)
+        X, Z = np.meshgrid(x, z)
+        Y = np.sqrt(radius**2 - (X - x_center)**2) + y_center # Pythagorean theorem
+        ax.plot_surface(X, Y, Z, linewidth=0, color=color_cylinder)
+        ax.plot_surface(X, (2*y_center-Y), Z, linewidth=0, color=color_cylinder)
+        floor = Circle((x_center, y_center), radius, color=color_cylinder)
+        ax.add_patch(floor)
+        art3d.pathpatch_2d_to_3d(floor, z=elevation, zdir="z")
+        ceiling = Circle((x_center, y_center), radius, color=color_cylinder)
+        ax.add_patch(ceiling)
+        art3d.pathpatch_2d_to_3d(ceiling, z=elevation+height, zdir="z")        
 
     # limits
     lim = .3
@@ -185,11 +211,18 @@ def generate_dataset(effect):
     
     obj_pos = ros_services.call_get_model_state(sim_param.obj_name_vector[0])
     obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
-    print('obj_pos', obj_pos)
+    print('cube pos', obj_pos)
+    
+    if push_cylinder:
+        cylinder_pos = ros_services.call_get_model_state(sim_param.obj_name_vector[1])
+        cylinder_pos = [round(pos, sim_param.round_value) for pos in cylinder_pos[0:3]]
+        print('cylinder_pos', cylinder_pos)    
     
     ## all trajs converge into a mid pos
     mid_pos = copy.copy(obj_pos)
     mid_pos[1] += 0.1
+    mid_pos[2] += 0.02
+    
     
     traj_vector = []
     traj_diverse_vector = []
@@ -209,23 +242,7 @@ def generate_dataset(effect):
             eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]        
     
         ''' Create main traj '''
-#        var_x_vector = (linspace(eef_pos[0], obj_pos[0], nb_steps-3)).tolist()
-##        var_x_vector = linspace(eef_pos[0], obj_pos[0], nb_steps)
-#        var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
-#        var_x_vector = var_x_vector + [var_x_vector[-1]] + [var_x_vector[-1]] + [var_x_vector[-1]]
-#        
-#        var_y_vector = linspace(eef_pos[1], obj_pos[1], nb_steps)
-#        var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
-#    #    var_y_vector = [var_y_vector[0]] + var_y_vector    
-#        
-##        var_z = abs(eef_pos[2] - obj_pos[2])
-#        var_z_vector = (linspace(eef_pos[2], obj_pos[2], int(nb_steps/2))).tolist()
-#        var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
-##        var_z_vector = var_z_vector + [var_z_vector[-1]] + [var_z_vector[-1]] + [var_z_vector[-1]] + [var_z_vector[-1]]
-#        var_z_vector_tmp = [obj_pos[2] for i in range(len(var_z_vector),nb_steps)]
-#        var_z_vector += var_z_vector_tmp
-
-        mid_var = traj_change * 5
+        mid_var = traj_change * 5 ## variation of the mid pos
         if eef_pos[0] < obj_pos[0]:
             mid_vax_x = mid_pos[0] + random.uniform(-mid_var,0)
         else:
@@ -236,13 +253,17 @@ def generate_dataset(effect):
         var_x_vector = (linspace(eef_pos[0], mid_vax_x,
                         int(nb_steps/2))).tolist()
         var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
-        var_x_vector_tmp = [mid_vax_x] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]
+        var_x_vector_tmp = [mid_vax_x] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]    
         var_x_vector += var_x_vector_tmp
         
+        if push_cylinder:
+            tmp_obj_pos = cylinder_pos
+        else:
+            tmp_obj_pos = obj_pos
         var_y_vector = (linspace(eef_pos[1], mid_vax_y,
                         int(nb_steps/2))).tolist()
         var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
-        var_y_vector_tmp = [mid_vax_y] + (linspace(mid_pos[1], obj_pos[1], int(nb_steps/2))).tolist()[1:]
+        var_y_vector_tmp = [mid_vax_y] + (linspace(mid_pos[1], tmp_obj_pos[1], int(nb_steps/2))).tolist()[1:]
         var_y_vector += var_y_vector_tmp
         
         var_z_vector = (linspace(eef_pos[2], mid_vax_z,
@@ -253,6 +274,20 @@ def generate_dataset(effect):
         
         traj = [[var_x_vector[i], var_y_vector[i], var_z_vector[i]] 
                  for i in range(len(var_x_vector))]
+                     
+        ## to touch cylinder after pushing the box
+        if push_cylinder:
+            nb_final_steps = int(nb_steps*0.3)
+            
+            final_traj_sections_x = (linspace(traj[-1][0], pos_cylinder[0],
+                            int(nb_final_steps+1))).tolist()
+            final_traj_sections_x = [round(pos, sim_param.round_value+2) for pos in final_traj_sections_x]
+            final_traj_sections_y = nb_final_steps * [traj[-1][1]]
+            final_traj_sections_z = nb_final_steps * [traj[-1][2]]
+            for i in range(nb_final_steps):
+                traj.append([final_traj_sections_x[i+1],
+                             final_traj_sections_y[i],
+                             final_traj_sections_z[i]])
         traj_vector.append(traj)
         
         ''' Create diverse trajs '''
@@ -292,7 +327,7 @@ def read_dataset(traj_vector):
     for line in lines:
         pos_rot_vector = line[:-2].split(',') ## remove final , and EOL
         traj = []
-        for pos in range(0, len(pos_rot_vector), 12):
+        for pos in range(0, len(pos_rot_vector), 18):
             current_x = float(pos_rot_vector[pos+0])
             current_y = float(pos_rot_vector[pos+1])
             current_z = float(pos_rot_vector[pos+2])
@@ -308,16 +343,21 @@ def read_dataset(traj_vector):
 if __name__ == "__main__":
     
     filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'    
+    pos_cube = [0.65, 0, -0.13]
     pos_cylinder = [0.75,-0.1,-0.13]
     
-    if 1: ## create
+    push_cylinder = True    
+    
+    create = True
+    create = False
+    if create: ## create
         print('GENERATING DATASET')
         nb_diverse_trajs = 100
         traj_change = 0.005
         round_value = 2
         
         nb_init_traj = nb_diverse_trajs
-        nb_steps = 10
+        nb_steps = 18 ## even number
         
         success = ros_services.call_restart_world("all")
         if not success:

@@ -138,7 +138,7 @@ def discretize_trajs(delta_vector,
 #                                         move,
 #                                         distance])
         
-        print(discr_delta_values)
+#        print(discr_delta_values)
         discr_dataset_vector.append(discr_delta_values)
         nb_delta += 1    
     
