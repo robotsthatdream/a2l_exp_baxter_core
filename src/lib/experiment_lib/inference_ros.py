@@ -1016,36 +1016,37 @@ def plot_traj_3d(init_pos_vector,
     ax.set_ylim3d([obj_pos[1]-lim, obj_pos[1]+lim])
     ax.set_zlim3d([obj_pos[2]-lim, obj_pos[2]+lim])
 
-    # cylinder
-    ## http://stackoverflow.com/questions/39822480/plotting-a-solid-cylinder-centered-on-a-plane-in-matplotlib
-    height = 0.09
-    obj_pos = obj_pos_dict['cylinder']
-    p0 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] - height/2]) #point at one end
-    p1 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] + height/2]) #point at other end
-    R = 0.035
-    v = p1 - p0
-    mag = norm(v)
-    v = v / mag
-    not_v = np.array([1, 0, 0])
-    if (v == not_v).all():
-        not_v = np.array([0, 1, 0])
-    n1 = np.cross(v, not_v)
-    n1 /= norm(n1)
-    n2 = np.cross(v, n1)
-    t = np.linspace(0, mag, 2)
-    theta = np.linspace(0, 2 * np.pi, 100)
-    rsample = np.linspace(0, R, 2)
-    t, theta2 = np.meshgrid(t, theta)
-    rsample,theta = np.meshgrid(rsample, theta)
-    # "Tube"
-    X, Y, Z = [p0[i] + v[i] * t + R * np.sin(theta2) * n1[i] + R * np.cos(theta2) *       n2[i] for i in [0, 1, 2]]
-    # "Bottom"
-    X2, Y2, Z2 = [p0[i] + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
-    # "Top"
-    X3, Y3, Z3 = [p0[i] + v[i]*mag + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]        
-    ax.plot_surface(X, Y, Z, color='blue', linewidth=0, alpha=0.2)
-    ax.plot_surface(X2, Y2, Z2, color='blue', linewidth=0, alpha=0.2)
-    ax.plot_surface(X3, Y3, Z3, color='blue', linewidth=0, alpha=0.2)           
+    if len(sim_param.obj_name_vector) > 1:
+        # cylinder
+        ## http://stackoverflow.com/questions/39822480/plotting-a-solid-cylinder-centered-on-a-plane-in-matplotlib
+        height = 0.09
+        obj_pos = obj_pos_dict['cylinder']
+        p0 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] - height/2]) #point at one end
+        p1 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] + height/2]) #point at other end
+        R = 0.035
+        v = p1 - p0
+        mag = norm(v)
+        v = v / mag
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        n1 = np.cross(v, not_v)
+        n1 /= norm(n1)
+        n2 = np.cross(v, n1)
+        t = np.linspace(0, mag, 2)
+        theta = np.linspace(0, 2 * np.pi, 100)
+        rsample = np.linspace(0, R, 2)
+        t, theta2 = np.meshgrid(t, theta)
+        rsample,theta = np.meshgrid(rsample, theta)
+        # "Tube"
+        X, Y, Z = [p0[i] + v[i] * t + R * np.sin(theta2) * n1[i] + R * np.cos(theta2) * n2[i] for i in [0, 1, 2]]
+        # "Bottom"
+        X2, Y2, Z2 = [p0[i] + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]
+        # "Top"
+        X3, Y3, Z3 = [p0[i] + v[i]*mag + rsample[i] * np.sin(theta) * n1[i] + rsample[i] * np.cos(theta) * n2[i] for i in [0, 1, 2]]        
+        ax.plot_surface(X, Y, Z, color='blue', linewidth=0, alpha=0.2)
+        ax.plot_surface(X2, Y2, Z2, color='blue', linewidth=0, alpha=0.2)
+        ax.plot_surface(X3, Y3, Z3, color='blue', linewidth=0, alpha=0.2)           
 
     # robot
     robot_width = .2
@@ -1177,7 +1178,7 @@ def infere_mov(bn, ie, node_names, node_values):
     posterior = ie.posterior(bn.idFromName('move'))
 #    if sim_param.debug:
 #    print('\n')
-#    print(posterior)
+    print(posterior)
 #    print(posterior[0])
 #    print(posterior[-1])
 #    print(type(posterior))

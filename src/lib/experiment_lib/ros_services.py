@@ -5,14 +5,13 @@
 """
 import rospy
 from a2l_exp_baxter_actions.srv import *
+from record_baxter_eef_trajectory.srv import *
 import time
 
 import os
 run_path = os.path.abspath(os.path.join('..', '..'))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
-
-#from gazebo_msgs.srv import GetModelState
 
 '''
 a
@@ -46,7 +45,27 @@ def call_generate_directed_dataset(dataset_type):
 a
 '''
 def call_get_eef_pose(eef_name):
-    service_name = 'a2l/get_eef_pose'
+    if sim_param.real_robot:
+        return call_get_real_eef_pose(eef_name)
+    else:
+        return call_get_simulated_eef_pose(eef_name)
+
+def call_get_real_eef_pose(eef_name):
+    service_name = 'a2l/get_real_eef_pose'
+    rospy.wait_for_service(service_name)
+    try:
+        if sim_param.debug_services:
+            print('--> CALL SERVICE get_eef_pose')        
+        type_name = Getrealeefpose
+        get_real_eef_pose = rospy.ServiceProxy(service_name, 
+                                          type_name)
+        resp = get_real_eef_pose(eef_name)
+        return resp.pose
+    except rospy.ServiceException, e:
+        print ("Service call to get_eef_pose failed: %s"%e)
+
+def call_get_simulated_eef_pose(eef_name):
+    service_name = 'a2l/get_eef_pose'        
     rospy.wait_for_service(service_name)
     try:
         if sim_param.debug_services:
@@ -63,6 +82,33 @@ def call_get_eef_pose(eef_name):
 a
 '''
 def call_get_model_state(model_name):
+    if sim_param.real_robot:
+        if model_name =='cube':
+            model_id = 1
+        elif model_name =='cylinder':
+            model_id = 0
+        else:
+            print('Unknown object ID for', model_name)
+            sys.exit()        
+        return call_get_real_model_state(model_id)
+    else:
+        return call_get_simulated_model_state(model_name)
+
+def call_get_real_model_state(model_id):
+    service_name = 'a2l/get_real_model_state'
+    rospy.wait_for_service(service_name)
+    try:        
+        if sim_param.debug_services:
+           print('--> CALL SERVICE get_real_model_state')        
+        type_name = Getrealmodelstate
+        get_real_model_state = rospy.ServiceProxy(service_name, 
+                                             type_name)
+        resp = get_real_model_state(model_id)
+        return resp.model_state        
+    except rospy.ServiceException, e:
+        print ("Service call to get_real_model_state failed: %s"%e)         
+        
+def call_get_simulated_model_state(model_name):
     service_name = 'a2l/get_model_state'
     rospy.wait_for_service(service_name)
     try:        
@@ -72,27 +118,9 @@ def call_get_model_state(model_name):
         get_model_state = rospy.ServiceProxy(service_name, 
                                              type_name)
         resp = get_model_state(model_name)
-#        print(resp)
         return resp.model_state        
     except rospy.ServiceException, e:
         print ("Service call to get_model_state failed: %s"%e) 
-        
-
-#def call_get_model_state(model_name):
-#    service_name = 'gazebo/get_model_state'
-#    rospy.wait_for_service(service_name)
-#    try:        
-#        if sim_param.debug_services:
-#           print('--> CALL SERVICE get_model_state')        
-#        gms = rospy.ServiceProxy('/gazebo/get_model_state',GetModelState)
-#        resp = gms(model_name,'base')
-#        print(resp)
-#        return [resp.pose.position.x, 
-#                resp.pose.position.y,
-#                resp.pose.position.z]
-#    except rospy.ServiceException, e:
-#        print ("Service call to get_model_state failed: %s"%e) 
-        
 
 '''
 a
@@ -193,7 +221,7 @@ if __name__  == "__main__":
 #          call_move_to_initial_position(1))
     
 #    print("call_trajectory_motion", 
-#           call_trajectory_motion(2, [0.65,0.2,0.1,0.5,0,0,0.7,0.3,0.2]))    
+#           call_trajectory_motion(1, [0.65,0.2,0.1,0.65,0,0.1]))    
     
    
 
