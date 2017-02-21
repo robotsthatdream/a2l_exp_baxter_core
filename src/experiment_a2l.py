@@ -5,9 +5,9 @@
 from __future__ import print_function
 
 import os, sys
-lib_a2l_path = os.path.abspath(os.path.join('.', 'lib', 'a2l_core_lib'))
+lib_a2l_path = os.path.realpath(os.path.abspath(os.path.join('.', 'lib', 'a2l_core_lib')))
 sys.path.append(lib_a2l_path)
-lib_exp_path = os.path.abspath(os.path.join('.', 'lib', 'experiment_lib'))
+lib_exp_path = os.path.realpath(os.path.abspath(os.path.join('.', 'lib', 'experiment_lib')))
 sys.path.append(lib_exp_path)
 import dataset_generation as dataset
 import discretize as discr
@@ -72,7 +72,7 @@ def basic_learning_dataset_size(dataset_type_vector,
                     ros_services.call_generate_directed_dataset(dataset_type)
             else:
                 dataset_filename = \
-                    '/home/maestre/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'        
+                    '/home/maestre/indigo/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'        
             
             ## read dataset            
             raw_delta_vector = dataset.read_dataset(dataset_filename)

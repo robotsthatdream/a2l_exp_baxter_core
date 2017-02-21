@@ -8,7 +8,7 @@ from __future__ import print_function
 import matplotlib.pyplot as plt
 
 import os, sys
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
 import math
@@ -29,10 +29,14 @@ Compute distance discretization
 def compute_distance_discr():
     if sim_param.discr_hand_coded:
         return None
-    else:         
-        discr_sections = discr_dist.Sections( sim_param.obj_side/2,
-                                      sim_param.circumference_radio,
-                              sim_param.nb_min_distance_sections)                                                           
+    else:
+        if sim_param.experiment_type == 'a2l_dataset_extension':
+            discr_sections = discr_dist.Sections( sim_param.obj_side/2,
+                                          sim_param.circumference_radio,
+                                  sim_param.nb_min_distance_sections)
+        else:
+            discr_sections = discr_dist.Sections(0,1,
+                                  sim_param.nb_min_distance_sections)            
         if sim_param.debug:
             discr_sections.print_me()
         
@@ -128,10 +132,10 @@ def discretize_trajs(delta_vector,
                 discr_delta_values = discr_delta_values + [distance, orientation, inclination]
                                           
 #            print([current_delta.get_effect(), 
-#                   orientation,
-#                   inclination,
 #                   move,
-#                   distance])
+#                   distance,
+#                   orientation,
+#                   inclination])
 #            discr_dataset_vector.append([current_delta.get_effect(), 
 #                                         orientation,
 #                                         inclination,

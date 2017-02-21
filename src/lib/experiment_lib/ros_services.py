@@ -9,7 +9,7 @@ from record_baxter_eef_trajectory.srv import *
 import time
 
 import os
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
 

@@ -4,6 +4,12 @@
 """
 from __future__ import print_function
 
+import os, sys
+lib_a2l_path = os.path.realpath(os.path.abspath(os.path.join('.', 'lib', 'a2l_core_lib')))
+sys.path.append(lib_a2l_path)
+lib_exp_path = os.path.realpath(os.path.abspath(os.path.join('.', 'lib', 'experiment_lib')))
+sys.path.append(lib_exp_path)
+
 import dataset_generation as dataset
 import discretize as discr
 import inference_ros as infer_ros

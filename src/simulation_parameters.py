@@ -10,10 +10,10 @@ import math
 real_robot = False
 
 nb_min_init_pos = 1 ## better if mod 4
-nb_min_orientation_sections = 16
-nb_min_inclination_sections = 8
-nb_min_distance_sections = 5
-exec_traj = False
+nb_min_orientation_sections = 64
+nb_min_inclination_sections = 64
+nb_min_distance_sections = 10
+exec_traj = True
 single_init_pos = True ## if False, circle of init pos around the box
 
 semi_random_trajs = True ## initial trajs using dicretized movs
@@ -101,22 +101,25 @@ inferred_traj = []
 
 ''' Experiment set-up values '''
 obj_name_vector = ["cube", 'cylinder'] ## first iteraction with first object 
-moved_obj_name_vector = obj_name_vector # ['cube']
+moved_obj_name_vector = ['cube'] # moved_obj_name_vector
 #untucked_left_eef_pos = [0.58, 0.18, 0.11]
-untucked_left_eef_pos = [0.65, 0.4, 0.1]
+untucked_left_eef_pos = [0.65, 0.6, 0.1]
 ########### TODO RIGHTTTTTTTTTTTTTTTTTTTT INIT POS
-obj_side = 0.1
+#obj_side = 0.1
 obj_displacement = 0.3
 circumference_radio = 0.2
 colormap_values = ['red','yellow','green','black']
+cube_x = 0.07
+cube_y = 0.085
+cube_z = 0.08
 
 ''' Experiment run values '''
 #nb_runs = 1
 fixed_obj_pos = False ## if false random obj pos during validation phase
 #obj_displacement = obj_side
-same_move_value = 0.02
+#same_move_value = 0.015
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
-step_length = 0 # obj_side/2 ## online coñputation based on dataset 
+step_length = 0 # obj_side/2 ## online computation based on dataset 
 random_max_movs = 7
 inferred_max_moves = 60
 max_nb_executed_deltas = inferred_max_moves
@@ -141,8 +144,8 @@ move_values = ['far',
 #effect_values = ['left', 'right', 'close', 'far']
 effect_values = ['right']               
 
-remote_far_boundary_value = 2 * obj_side
-far_close_boundary_value = 1 * obj_side
+#remote_far_boundary_value = 2 * obj_side
+#far_close_boundary_value = 1 * obj_side
 
 orien_offset = (2*math.pi/nb_min_orientation_sections)/2
 #orien_min_angle = -math.pi + math.pi/2  + orien_offset

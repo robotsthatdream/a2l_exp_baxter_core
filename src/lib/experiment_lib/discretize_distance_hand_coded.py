@@ -7,7 +7,7 @@ Created on Thu Jul  7 16:54:57 2016
 import scipy.spatial.distance as spatial
 
 import os, sys
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
 

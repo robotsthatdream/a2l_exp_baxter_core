@@ -9,9 +9,9 @@ from matplotlib.patches import Rectangle
 import random
 
 import os, sys
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
-lib_path = os.path.abspath(os.path.join('..', 'a2l_core_lib'))
+lib_path = os.path.realpath(os.path.abspath(os.path.join('..', 'a2l_core_lib')))
 sys.path.append(lib_path)
 import environment_dynamics as env
 import environment_delta as delta

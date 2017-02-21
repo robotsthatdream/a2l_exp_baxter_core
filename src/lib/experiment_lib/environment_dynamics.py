@@ -6,7 +6,7 @@ Created on Mon Mar  7 15:37:47 2016
 """
 
 import os, sys
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
 import simulation_parameters as sim_param
 
@@ -119,34 +119,41 @@ def check_obj_moved(box_pos,
                     _wp, 
                     _wp_next):
 
-    box_side = sim_param.obj_side
-    
-    ## object corners
-    l_bottom_front_right = Point(box_pos[0] + box_side/2, 
-                                 box_pos[1] - box_side/2, 
-                                 box_pos[2] - box_side/2)    
-    l_bottom_front_left = Point(box_pos[0] + box_side/2, 
-                                 box_pos[1] + box_side/2, 
-                                 box_pos[2] - box_side/2)                                 
-    l_bottom_back_right = Point(box_pos[0] - box_side/2, 
-                                 box_pos[1] - box_side/2, 
-                                 box_pos[2] - box_side/2)
-    l_bottom_back_left = Point(box_pos[0] - box_side/2, 
-                                 box_pos[1] + box_side/2, 
-                                 box_pos[2] - box_side/2)                                 
+#    box_side = sim_param.obj_side
 
-    l_top_front_right = Point(box_pos[0] + box_side/2, 
-                                 box_pos[1] - box_side/2, 
-                                 box_pos[2] + box_side/2)
-    l_top_front_left = Point(box_pos[0] + box_side/2, 
-                                 box_pos[1] + box_side/2, 
-                                 box_pos[2] + box_side/2)                                 
-    l_top_back_right = Point(box_pos[0] - box_side/2, 
-                                 box_pos[1] - box_side/2, 
-                                 box_pos[2] + box_side/2)
-    l_top_back_left = Point(box_pos[0] - box_side/2, 
-                                 box_pos[1] + box_side/2, 
-                                 box_pos[2] + box_side/2)
+    if sim_param.experiment_type == 'a2l_reproduce_dataset':
+        box_side_front = sim_param.cube_x ## side in front of the robot
+        box_side_lateral = sim_param.cube_y
+        box_side_top = sim_param.cube_z
+    else:
+        box_side_front = box_side_lateral = box_side_top = sim_param.box_side
+        
+    ## object corners
+    l_bottom_front_right = Point(box_pos[0] + box_side_front/2,
+                                 box_pos[1] - box_side_lateral/2, 
+                                 box_pos[2] - box_side_top/2)    
+    l_bottom_front_left = Point(box_pos[0] + box_side_lateral/2, 
+                                 box_pos[1] + box_side_front/2, 
+                                 box_pos[2] - box_side_top/2)                                 
+    l_bottom_back_right = Point(box_pos[0] - box_side_lateral/2, 
+                                 box_pos[1] - box_side_front/2, 
+                                 box_pos[2] - box_side_top/2)
+    l_bottom_back_left = Point(box_pos[0] - box_side_lateral/2, 
+                                 box_pos[1] + box_side_front/2, 
+                                 box_pos[2] - box_side_top/2)                                 
+
+    l_top_front_right = Point(box_pos[0] + box_side_lateral/2, 
+                                 box_pos[1] - box_side_front/2, 
+                                 box_pos[2] + box_side_top/2)
+    l_top_front_left = Point(box_pos[0] + box_side_lateral/2, 
+                                 box_pos[1] + box_side_front/2, 
+                                 box_pos[2] + box_side_top/2)                                 
+    l_top_back_right = Point(box_pos[0] - box_side_lateral/2, 
+                                 box_pos[1] - box_side_front/2, 
+                                 box_pos[2] + box_side_top/2)
+    l_top_back_left = Point(box_pos[0] - box_side_lateral/2, 
+                                 box_pos[1] + box_side_front/2, 
+                                 box_pos[2] + box_side_top/2)                                
     
     obj_moved = False
     i = 0
@@ -199,7 +206,7 @@ def compute_obj_pos(obj_pos,
                                 wp_final)
     new_box_pos = [pos for pos in obj_pos]
 
-    z_max_value_box = obj_pos[2] + sim_param.obj_side/2  
+#    z_max_value_box = obj_pos[2] + sim_param.obj_side/2  
     
     if obj_moved:
         

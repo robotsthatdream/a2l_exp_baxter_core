@@ -16,9 +16,9 @@ from collections import OrderedDict
 #from scipy import spatial
 
 import os, sys
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
-lib_path = os.path.abspath(os.path.join('..', 'a2l_core_lib'))
+lib_path = os.path.realpath(os.path.abspath(os.path.join('..', 'a2l_core_lib')))
 sys.path.append(lib_path)
 import environment_dynamics as env
 import environment_setup as setup
@@ -52,7 +52,9 @@ from math import sqrt
 
 import copy
 
-from collections import OrderedDict
+from collections import OrderedDict, Counter
+
+import operator
 
 '''
 callback class
@@ -386,11 +388,13 @@ def infere_trajectories(current_results_folder,
     obj_pos_dict = OrderedDict()
     for obj_name in sim_param.obj_name_vector:
         obj_pos = ros_services.call_get_model_state(obj_name)
-        obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
+        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
         if obj_name == 'cube':
-            obj_pos[2] = -0.15
+#            obj_pos[2] = -0.15
+            obj_pos[2] = round(obj_pos[2] + 0.035,3)
         else:
-            obj_pos[2] = -0.14
+#            obj_pos[2] = -0.14
+            obj_pos[2] = round(obj_pos[2] + 0.06, 3)
         obj_pos_dict[obj_name] = obj_pos
         
     ''' Get first obj pos to compute eef initial pos'''
@@ -463,9 +467,8 @@ def infere_trajectories(current_results_folder,
                     obj_pos_dict[obj_name] = \
                         [new_obj_pos[0] + sim_param.new_obj_pos_dist,
                          new_obj_pos[1] - sim_param.new_obj_pos_dist,
-                         -0.14]
-
-#                         new_obj_pos[2]]      
+#                         -0.14]
+                         new_obj_pos[2]]      
                     ## move obj to new pos    
                     success = ros_services.call_restart_world("object",
                                                       obj_name,
@@ -737,20 +740,16 @@ def simulate_traj(bn, ie,
                 expected_effect, 
                 current_orien,
                 current_inclin,
-                current_dist,
-                accurate_level = 1):
-    
-    if accurate_level > 1:
-        print('ACCURATE TRAJECTORY:',accurate_level)
+                current_dist):
     
     eef_traj = [[round(eef_pos[0],2),
                  round(eef_pos[1], 2), 
                  round(eef_pos[2], 2)]]
-    delta_vector = [] ## [[(orientation, inclination, distance)], next_mov_discr]
+    delta_vector = [] ## [next_mov_discr,[(distance, orientation, inclination)]]
     all_obj_moved = False
-    prev_mov_delta = [0,0,0]
+
     i = 0
-    while not all_obj_moved and i < sim_param.inferred_max_moves*accurate_level:
+    while not all_obj_moved and i < sim_param.inferred_max_moves:
         print('\nInferred delta ', i)
         
         current_eef_x = eef_traj[-1][0] ## last value added
@@ -761,7 +760,8 @@ def simulate_traj(bn, ie,
         nn_pos_vector =  [[current_eef_x,
                            current_eef_y,
                            current_eef_z]]        
-        add_dist = sim_param.step_length/2*accurate_level
+        add_dist = sim_param.step_length/2
+        
         for j in range(6):
             tmp_pos = [current_eef_x,
                        current_eef_y,
@@ -794,7 +794,8 @@ def simulate_traj(bn, ie,
             node_names = ['effect']
             node_values = [expected_effect]
             obj_id = 0
-            for obj_name in sim_param.obj_name_vector:                                
+            for obj_name in sim_param.obj_name_vector:
+#                print('obj pos inferring -->', obj_name, obj_pos_dict[obj_name])                            
                 distance = discr_dist.compute_distance(
                     [current_eef_x_tmp,current_eef_y_tmp], 
                     obj_pos_dict[obj_name],
@@ -818,11 +819,12 @@ def simulate_traj(bn, ie,
                 obj_id += 1
                 
             ## infere next move            
-            try:
+            try:                
                 next_mov_discr, prob_value, delta_nb_var, same_prob = \
                     infere_mov(bn, ie,                                        
                                node_names,
                                node_values)
+                print(node_values, next_mov_discr, prob_value)
             except Exception as e: 
                 if sim_param.debug_infer:
                     print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!!', e)
@@ -856,19 +858,75 @@ def simulate_traj(bn, ie,
 
         print(node_values)
                 
-        ## MOVE 
-        ## with higher prob    
-        max_prob = virt_inference_vector[0][3]
-        max_next_move = virt_inference_vector[0][2]
-        max_pos = 0
-        tmp_i = 1
-        for tmp_infer_values in virt_inference_vector[1:]:
-            if tmp_infer_values[3] > max_prob:
-                max_prob = tmp_infer_values[3]
-                max_next_move = tmp_infer_values[2]
-                max_pos = tmp_i
-            tmp_i += 1
-        print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', max_pos)
+#        ## MOVE 
+#        ## with higher prob    
+#        max_prob = virt_inference_vector[0][3]
+#        max_next_move = virt_inference_vector[0][2]
+#        max_pos = 0
+#        tmp_i = 1
+#        for tmp_infer_values in virt_inference_vector[1:]:
+#            if tmp_infer_values[3] > max_prob:
+#                max_prob = tmp_infer_values[3]
+#                max_next_move = tmp_infer_values[2]
+#                max_pos = tmp_i
+#            tmp_i += 1
+#        print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', max_pos)
+#        next_mov_discr = [max_next_move]                
+                
+            
+        ## get 2 higher values
+        ## if close, we select the one more repeated
+        ## else, the higher value
+        cumulated_prob_dict = OrderedDict()
+        for tmp_infer_values in virt_inference_vector:
+            if not tmp_infer_values[2] in cumulated_prob_dict.keys():
+                cumulated_prob_dict[tmp_infer_values[2]] = 0 ## cumulated prob
+            cumulated_prob_dict[tmp_infer_values[2]] += tmp_infer_values[3]
+                
+#        counter_dict = Counter(cumulated_prob_dict) ## { key1:n times, key2:p times etc }
+        
+        keys_found_list = []
+        for curr_res in virt_inference_vector:
+            keys_found_list.append(curr_res[2])
+            
+        counter_dict = OrderedDict()
+        for key in keys_found_list:
+            if key == '':
+                continue
+            
+            if not key in counter_dict:
+                counter_dict[key] = 1
+            else:
+                counter_dict[key] += 1
+    
+        mean_prob_dict = OrderedDict()
+        for move,repetitions in counter_dict.items():
+            print(move,repetitions)
+            mean_prob_dict[move] = round(cumulated_prob_dict[move]/repetitions, 
+                                         sim_param.round_value) ## mean value
+
+        sorted_mean_list = sorted(mean_prob_dict.items(), key=operator.itemgetter(1), reverse=True)
+        print(sorted_mean_list)
+        max_next_move = ''
+        if len(sorted_mean_list) == 1:
+            max_next_move = sorted_mean_list[0][0]
+            max_prob = sorted_mean_list[0][1]
+        ## if 2 elems check if are close
+        elif len(sorted_mean_list) > 1:
+            ## if are close, get the more repeated one
+            if round(sorted_mean_list[1][1] / sorted_mean_list[0][1],2) >= 0.75:
+                if counter_dict[sorted_mean_list[0][0]] >= \
+                   counter_dict[sorted_mean_list[1][0]]:
+                    max_next_move = sorted_mean_list[0][0]
+                    max_prob = sorted_mean_list[0][1]
+                else:
+                    max_next_move = sorted_mean_list[1][0]
+                    max_prob = sorted_mean_list[1][1]
+            else:
+                max_next_move = sorted_mean_list[0][0]
+                max_prob = sorted_mean_list[0][1]
+        
+        print('Next move for pos', max_next_move.upper(), 'with mean prob', max_prob)
         next_mov_discr = [max_next_move]
 
 #        if sim_param.debug_infer:
@@ -993,7 +1051,7 @@ def plot_traj_3d(init_pos_vector,
     obj_pos = obj_pos_dict['cube']
     ax.bar3d(obj_pos[0] - 0.085/2, 
              obj_pos[1] - 0.07/2, 
-             obj_pos[2] - 0.08/2 + 0.02, 
+             obj_pos[2] - 0.08 + 0.02, 
              [.085], [.07], [.08], 
              color='green',
              alpha=0.2,
@@ -1020,10 +1078,10 @@ def plot_traj_3d(init_pos_vector,
         # cylinder
         ## http://stackoverflow.com/questions/39822480/plotting-a-solid-cylinder-centered-on-a-plane-in-matplotlib
         height = 0.09
-        obj_pos = obj_pos_dict['cylinder']
-        p0 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] - height/2]) #point at one end
-        p1 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] + height/2]) #point at other end
         R = 0.035
+        obj_pos = obj_pos_dict['cylinder']
+        p0 = np.array([obj_pos[0], obj_pos[1], obj_pos[2]]) #point at one end
+        p1 = np.array([obj_pos[0], obj_pos[1], obj_pos[2] - height]) #point at other end        
         v = p1 - p0
         mag = norm(v)
         v = v / mag
@@ -1178,7 +1236,7 @@ def infere_mov(bn, ie, node_names, node_values):
     posterior = ie.posterior(bn.idFromName('move'))
 #    if sim_param.debug:
 #    print('\n')
-    print(posterior)
+#    print(posterior)
 #    print(posterior[0])
 #    print(posterior[-1])
 #    print(type(posterior))

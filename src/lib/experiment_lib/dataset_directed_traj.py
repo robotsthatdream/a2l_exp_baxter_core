@@ -8,9 +8,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import random
 
 import os, sys
-run_path = os.path.abspath(os.path.join('..', '..'))
+run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
 sys.path.append(run_path)
-lib_path = os.path.abspath(os.path.join('..', 'a2l_core_lib'))
+lib_path = os.path.realpath(os.path.abspath(os.path.join('..', 'a2l_core_lib')))
 sys.path.append(lib_path)
 import ros_services
 import simulation_parameters as sim_param
@@ -77,9 +77,9 @@ def plot_objects(ax, obj_vector):
     # limits
     obj_pos = pos_cube
     lim = .3
-    ax.set_xlim3d([obj_pos[0]-lim, obj_pos[0]+lim])
-    ax.set_ylim3d([obj_pos[1]-lim, obj_pos[1]+lim])
-    ax.set_zlim3d([obj_pos[2]-lim, obj_pos[2]+lim])             
+    ax.set_xlim3d([(obj_pos[0]-lim), (obj_pos[0]+lim)])
+    ax.set_ylim3d([(obj_pos[1]-lim), (obj_pos[1]+lim*1)])
+    ax.set_zlim3d([(obj_pos[2]-lim), (obj_pos[2]+lim)])             
              
     if push_cylinder:
         
@@ -262,11 +262,14 @@ def generate_dataset(effect):
     else:
         cube_pos = ros_services.call_get_model_state(obj_name_vector[0])
     cube_pos = [round(pos, sim_param.round_value) for pos in cube_pos[0:3]]
+    cube_pos[2] = round(cube_pos[2] + cube_height/2, sim_param.round_value)
     print('cube pos', cube_pos)
     
     if push_cylinder:
-        cylinder_pos = ros_services.call_get_model_state(obj_name_vector[1])
+        cylinder_pos = ros_services.call_get_model_state(obj_name_vector[1])        
         cylinder_pos = [round(pos, sim_param.round_value) for pos in cylinder_pos[0:3]]
+        cylinder_pos[2] = round(cylinder_pos[2] + cylinder_height/2, 
+                                sim_param.round_value)
         print('cylinder_pos', cylinder_pos)    
     
     traj_vector = []
@@ -278,7 +281,7 @@ def generate_dataset(effect):
             ## all trajs converge into a mid pos
             mid_pos = copy.copy(cube_pos)
             mid_pos[1] += 0.1
-            mid_pos[2] += 0.02            
+            mid_pos[2] += 0.02
             
             ''' Create new inital position '''
             if i != 0:
@@ -289,7 +292,7 @@ def generate_dataset(effect):
                 eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]        
         
             ''' Create main traj '''
-            mid_var = traj_change * 5 ## variation of the mid pos
+            mid_var = wp_change/2  ## variation of the mid pos
             if eef_pos[0] < cube_pos[0]:
                 mid_vax_x = mid_pos[0] + random.uniform(-mid_var,0)
             else:
@@ -340,7 +343,8 @@ def generate_dataset(effect):
         elif exp_iros_one_obj:
             ## all trajs converge into a mid pos
             mid_pos = copy.copy(cube_pos)
-            mid_pos[1] += 0.15            
+            mid_pos[1] += 0.15
+            mid_pos[2] = round(mid_pos[2] - cube_height/2, 2) ## touch the center of the object
             
             if i != 0:
                 eef_pos_range = sim_param.new_obj_pos_dist
@@ -377,7 +381,8 @@ def generate_dataset(effect):
         elif exp_iros_two_obj:
             ## all trajs converge into a mid pos
             mid_pos = copy.copy(cube_pos)
-            mid_pos[1] += 0.3            
+            mid_pos[1] += 0.45    
+            mid_pos[2] = round(mid_pos[2] - cube_height/2, 2) + 0.03
             
             if i != 0:
                 eef_pos_range = sim_param.new_obj_pos_dist
@@ -385,42 +390,43 @@ def generate_dataset(effect):
                 eef_pos[1] = eef_pos[1] + random.uniform(-eef_pos_range,eef_pos_range)
                 eef_pos[2] = eef_pos[2] + random.uniform(-eef_pos_range,eef_pos_range)
                 eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]              
-            
-            ''' Create main traj '''           
-#            var_x_vector = (linspace(eef_pos[0], cube_pos[0],
-#                            int(nb_steps/2))).tolist()
-#            var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
-#            var_x_vector_tmp = [mid_pos[0] for i in range(len(var_x_vector),nb_steps)]    
-#            var_x_vector += var_x_vector_tmp
-#            
-#            tmp_obj_pos = cylinder_pos
-#            var_y_vector = (linspace(eef_pos[1], mid_pos[1],
-#                            int(nb_steps/2))).tolist()
-#            var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
-#            var_y_vector_tmp = (linspace(mid_pos[1], tmp_obj_pos[1], int(nb_steps/2))).tolist()
-#            var_y_vector += var_y_vector_tmp
-#            
-#            var_z_vector = (linspace(eef_pos[2], mid_pos[2],
-#                            int(nb_steps/2))).tolist()
-#            var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
-#            var_z_vector_tmp = [mid_pos[2] for i in range(len(var_z_vector),nb_steps)]
-#            var_z_vector += var_z_vector_tmp
-            
-            main_traj = [eef_pos]
-            main_traj.append([0.65,0.3,cube_pos[2]])
-            main_traj.append([0.55,0.15,cube_pos[2]])
-            main_traj.append([0.75,0.15,cube_pos[2]])
-            main_traj.append([0.65,0.08,cube_pos[2]])
-            main_traj.append(cube_pos)
-            main_traj.append([cube_pos[0], cube_pos[1]-0.1, cube_pos[2]])
 
+            ''' Vary a little bit the mid pos '''
+            mid_var = wp_change/2 ## variation of the mid pos
+            if eef_pos[0] < cube_pos[0]:
+                mid_vax_x = mid_pos[0] + random.uniform(-mid_var,mid_var)
+            else:
+                mid_vax_x = mid_pos[0] + random.uniform(-mid_var,mid_var)
+            mid_vax_y = mid_pos[1] + random.uniform(-mid_var,mid_var*3)
+            mid_vax_z = mid_pos[2] + random.uniform(-mid_var,mid_var)
+            
+            ''' Create main traj '''
+            main_traj = [eef_pos]
+            main_traj.append([mid_vax_x,
+                              mid_vax_y,
+                              mid_vax_z])
+            main_traj.append([0.45 + random.uniform(-mid_var,mid_var),
+                              0.15 + random.uniform(-mid_var,mid_var),
+                              mid_pos[2] + random.uniform(-mid_var,mid_var)])
+            main_traj.append([0.85 + random.uniform(-mid_var/1,mid_var/1),
+                              0.15 + random.uniform(-mid_var/1,mid_var/1),
+                              mid_pos[2] + random.uniform(-mid_var/1,mid_var/1)])
+            main_traj.append([0.65 + random.uniform(-mid_var/1,mid_var/1),
+                              0 + random.uniform(-mid_var/1,mid_var/1),
+                              mid_pos[2] + random.uniform(-mid_var/1,mid_var/1)])
+#            main_traj.append(cube_pos)
+            main_traj.append([cube_pos[0] + random.uniform(-mid_var/1,mid_var/1), 
+                              cube_pos[1]-0.1 + random.uniform(-mid_var/1,mid_var/1), 
+                              mid_pos[2] + random.uniform(-mid_var/1,mid_var/1)])
+
+            ''' Split each traj on small segments '''
             var_x_vector = []
             var_y_vector = []
             var_z_vector = []
-            nb_segments = 4           
+            nb_segments = 6
             for pos in range(len(main_traj)-1):
-                if pos == 0:
-                    nb_segments *= 2
+#                if pos == 2:
+#                    nb_segments *= 2
                 
                 if main_traj[pos][0] != main_traj[pos+1][0]:
                     tmp_sector_x = (linspace(main_traj[pos][0],
@@ -444,10 +450,7 @@ def generate_dataset(effect):
                                           nb_segments)).tolist()
                 else:
                     tmp_sector_z = [main_traj[pos][2] for val in range(nb_segments)]
-                var_z_vector += tmp_sector_z;
-                
-                if pos == 0:
-                    nb_segments /= 2                
+                var_z_vector += tmp_sector_z;                          
 
             traj = [[var_x_vector[i], var_y_vector[i], var_z_vector[i]] 
                      for i in range(len(var_x_vector))]
@@ -515,21 +518,26 @@ if __name__ == "__main__":
     exp_two_push = False
     exp_iros_one_obj = False
     exp_iros_two_obj = not exp_iros_one_obj
+    
+    cube_height = 0.08
+    cylinder_height = 0.09
 
     if sim_param.real_robot:
         filename = '/home/maestre/.ros/eef_trajectory_recorder.csv'    
     else:
-#        filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
-        filename = '../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
-        pos_cube = [0.65, 0, -0.17 + 0.08]        
+        filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
+#        filename = '../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'        
         if exp_two_push:
             obj_name_vector = ['cylinder', 'cube']
+            pos_cube = [0.65, -0.15, -0.17 + 0.08]
             pos_cylinder = [0.75,-0.1,-0.17 + 0.09]
         elif exp_iros_one_obj:
             obj_name_vector = ['cube']
+            pos_cube = [0.65, -0.15, -0.17 + 0.08]
         elif exp_iros_two_obj:
             obj_name_vector = ['cylinder', 'cube']
-            pos_cylinder = [0.65, 0.15, -0.17 + 0.09]
+            pos_cube = [0.65, -0.15, -0.17 + 0.08]
+            pos_cylinder = [0.65, 0.15, -0.17 + 0.09]            
         else:
             print('Missing experiment type')
             sys.out()            
@@ -539,12 +547,11 @@ if __name__ == "__main__":
     block_of_info = 6 + 6*nb_objects
     
     create = True
-#    create = False
     
     if create: ## create
         print('GENERATING DATASET')
-        nb_diverse_trajs = 50
-        traj_change = 0.005
+        nb_diverse_trajs = 100
+        wp_change = 0.05
         round_value = 2
         
         nb_init_traj = nb_diverse_trajs
