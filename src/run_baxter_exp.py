@@ -202,54 +202,56 @@ if __name__ == "__main__":
                 dataset_type_vector,
                 learn_algo_vector,
                 current_results_folder)
-                                        
-        ''' Compute score '''
-        for dataset_stat in dataset_stats_vector:
-            infer_ros.compute_score_norm(dataset_stat, learn_algo_vector)
 
-        '''
-        Compute cumulated performance value of each init position
-        given a dataset and a discretization configuration
-        '''        
-        dataset_perf_value_vector = \
-            dataset.compute_cumulated_perf(
-                dataset_stats_vector[0],
-                learn_algo_vector,
-                initial_pos_vector)
-        
-        
-        ''' Plot stats basic learning'''
-        if sim_param.plot_stats:            
-            ## plot dataset generated
-            dataset_stats.plot_dataset_stats(filename)
+        if sim_param.experiment_type == 'a2l_dataset_extension':
+                                        
+            ''' Compute score '''
+            for dataset_stat in dataset_stats_vector:
+                infer_ros.compute_score_norm(dataset_stat, learn_algo_vector)
+    
+            '''
+            Compute cumulated performance value of each init position
+            given a dataset and a discretization configuration
+            '''        
+            dataset_perf_value_vector = \
+                dataset.compute_cumulated_perf(
+                    dataset_stats_vector[0],
+                    learn_algo_vector,
+                    initial_pos_vector)
             
-            if sim_param.nb_dataset_sizes == 1:
-                ## plot results of inferred trajectories for 1 size
-                stats.plot_global_results_dataset_run(current_plot_folder, 
-                                                       dataset_stats_vector,
-                                                       dataset_type_vector,
-                                                       learn_algo_vector,
-                                                       sim_param.nb_min_init_pos)
-            else:            
-                for dataset_stat in dataset_stats_vector:
-                    ## plot results of inferred trajectories for diff sizes
-                    stats.plot_global_results_dataset_size(dataset_stat,
-                                                           current_plot_folder,
-                                                           learn_algo_vector)
-                                                           
-                    ## plot mean move's prob for diff sixes
-                    stats.plot_probs_dataset_size(dataset_stat,                                                           
-                                                  current_plot_folder,
-                                                  learn_algo_vector)
             
-#            ## plot circles with number of reproduced effects
-#            ## with different dataset sizes
-#            for current_dataset in dataset_perf_value_vector:
-#                stats.plot_infer_trajs_performance_values_changing_size(
-#                        current_dataset,
-#                        initial_obj_pos,
-#                        initial_pos_vector,
-#                        learn_algo_vector)
+            ''' Plot stats basic learning'''
+            if sim_param.plot_stats:            
+                ## plot dataset generated
+                dataset_stats.plot_dataset_stats(filename)
+                
+                if sim_param.nb_dataset_sizes == 1:
+                    ## plot results of inferred trajectories for 1 size
+                    stats.plot_global_results_dataset_run(current_plot_folder, 
+                                                           dataset_stats_vector,
+                                                           dataset_type_vector,
+                                                           learn_algo_vector,
+                                                           sim_param.nb_min_init_pos)
+                else:            
+                    for dataset_stat in dataset_stats_vector:
+                        ## plot results of inferred trajectories for diff sizes
+                        stats.plot_global_results_dataset_size(dataset_stat,
+                                                               current_plot_folder,
+                                                               learn_algo_vector)
+                                                               
+                        ## plot mean move's prob for diff sixes
+                        stats.plot_probs_dataset_size(dataset_stat,                                                           
+                                                      current_plot_folder,
+                                                      learn_algo_vector)
+                
+    #            ## plot circles with number of reproduced effects
+    #            ## with different dataset sizes
+    #            for current_dataset in dataset_perf_value_vector:
+    #                stats.plot_infer_trajs_performance_values_changing_size(
+    #                        current_dataset,
+    #                        initial_obj_pos,
+    #                        initial_pos_vector,
+    #                        learn_algo_vector)
                                                   
 
         if 'random' in dataset_type_vector:

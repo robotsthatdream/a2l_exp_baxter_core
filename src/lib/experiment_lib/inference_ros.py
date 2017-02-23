@@ -379,27 +379,31 @@ def infere_trajectories(current_results_folder,
             print("ERROR - restart_world failed")
     else:
         if curr_nb_infere_trajs == 0:
-            ''' Restart scenario '''         
-            success = ros_services.call_restart_world("all")
-            if not success:
-                print("ERROR - restart_world failed")    
+            ''' Restart scenario '''
+            if sim_param.real_robot:
+                success = ros_services.call_move_to_initial_position(
+                            sim_param.untucked_left_eef_pos)
+                if not success:
+                    print("ERROR - restart_world failed")    
+            else:            
+                success = ros_services.call_restart_world("all")
+                if not success:
+                    print("ERROR - restart_world failed")    
 
     ''' Get all object pos'''
     obj_pos_dict = OrderedDict()
     for obj_name in sim_param.obj_name_vector:
         obj_pos = ros_services.call_get_model_state(obj_name)
-        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
-        if obj_name == 'cube':
-#            obj_pos[2] = -0.15
-            obj_pos[2] = round(obj_pos[2] + 0.035,3)
-        else:
-#            obj_pos[2] = -0.14
-            obj_pos[2] = round(obj_pos[2] + 0.06, 3)
+        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]        
+        if not sim_param.real_robot:
+            if obj_name == 'cube':
+                obj_pos[2] = round(obj_pos[2] + 0.055,3)
+            else:
+                obj_pos[2] = round(obj_pos[2] + 0.065, 3)
         obj_pos_dict[obj_name] = obj_pos
         
     ''' Get first obj pos to compute eef initial pos'''
     first_obj_pos = obj_pos_dict[sim_param.obj_name_vector[0]]
-#    print(first_obj_pos, ':', first_obj_pos)
     for name,pos in obj_pos_dict.items():
         print(name, '-->', pos)
     
@@ -666,7 +670,9 @@ def infere_traj(bn, ie,
             correct_traj = False
             print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
 
-        if correct_traj:            
+        if correct_traj:
+            if sim_param.real_robot:
+                raw_input("PRESS ENTER TO RUN TRAJECTORY.")
             ## execute trajectory
             simulated_traj_vector = [i for el in traj for i in el] ## [float]
             res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
@@ -908,7 +914,7 @@ def simulate_traj(bn, ie,
         sorted_mean_list = sorted(mean_prob_dict.items(), key=operator.itemgetter(1), reverse=True)
         print(sorted_mean_list)
         max_next_move = ''
-        if len(sorted_mean_list) == 1:
+        if len(sorted_mean_list) == 1 or sorted_mean_list[0][1] > 0.95:
             max_next_move = sorted_mean_list[0][0]
             max_prob = sorted_mean_list[0][1]
         ## if 2 elems check if are close
@@ -1051,7 +1057,7 @@ def plot_traj_3d(init_pos_vector,
     obj_pos = obj_pos_dict['cube']
     ax.bar3d(obj_pos[0] - 0.085/2, 
              obj_pos[1] - 0.07/2, 
-             obj_pos[2] - 0.08 + 0.02, 
+             obj_pos[2] - 0.08, 
              [.085], [.07], [.08], 
              color='green',
              alpha=0.2,

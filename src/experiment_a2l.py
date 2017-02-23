@@ -71,8 +71,13 @@ def basic_learning_dataset_size(dataset_type_vector,
                 dataset_filename = \
                     ros_services.call_generate_directed_dataset(dataset_type)
             else:
-                dataset_filename = \
-                    '/home/maestre/indigo/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'        
+                if sim_param.real_robot:
+                    dataset_filename = \
+                        '/home/maestre/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'        
+                else:
+                    dataset_filename = \
+                        '/home/maestre/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
+#                        '/home/maestre/indigo/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'                            
             
             ## read dataset            
             raw_delta_vector = dataset.read_dataset(dataset_filename)

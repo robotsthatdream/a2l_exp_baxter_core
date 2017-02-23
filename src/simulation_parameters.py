@@ -7,7 +7,7 @@ import math
 
 ''' Main parameters '''
 
-real_robot = False
+real_robot = True
 
 nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 64
@@ -89,7 +89,7 @@ nb_infere_trajs = 1
 obj_too_far_distance = 1.5 ## to move it back close to the eef init pos
 new_obj_pos_dist = 0.1 ## for new pos close to init obj pos 
 max_inferred_traj_tries = 1
-first_obj_pos = [0.65, 0, -0.13]
+first_obj_pos = [0.65, -0.15, -0.13]
 
 ''' ROS execution '''
 feedback_topic = '/a2l/traj_exec_info'
@@ -103,7 +103,7 @@ inferred_traj = []
 obj_name_vector = ["cube", 'cylinder'] ## first iteraction with first object 
 moved_obj_name_vector = ['cube'] # moved_obj_name_vector
 #untucked_left_eef_pos = [0.58, 0.18, 0.11]
-untucked_left_eef_pos = [0.65, 0.6, 0.1]
+untucked_left_eef_pos = [0.65, 0.25, -0.03]
 ########### TODO RIGHTTTTTTTTTTTTTTTTTTTT INIT POS
 #obj_side = 0.1
 obj_displacement = 0.3
@@ -161,7 +161,7 @@ perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 50
+nb_adapted_iterations = 3
 extend_max_trajs = 50
 extend_max_movs = random_max_movs/2
 nb_init_pos_for_adaption = 4

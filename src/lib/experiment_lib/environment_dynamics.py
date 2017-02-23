@@ -131,29 +131,29 @@ def check_obj_moved(box_pos,
     ## object corners
     l_bottom_front_right = Point(box_pos[0] + box_side_front/2,
                                  box_pos[1] - box_side_lateral/2, 
-                                 box_pos[2] - box_side_top/2)    
+                                 box_pos[2] - box_side_top)    
     l_bottom_front_left = Point(box_pos[0] + box_side_lateral/2, 
                                  box_pos[1] + box_side_front/2, 
-                                 box_pos[2] - box_side_top/2)                                 
+                                 box_pos[2] - box_side_top)                                 
     l_bottom_back_right = Point(box_pos[0] - box_side_lateral/2, 
                                  box_pos[1] - box_side_front/2, 
-                                 box_pos[2] - box_side_top/2)
+                                 box_pos[2] - box_side_top)
     l_bottom_back_left = Point(box_pos[0] - box_side_lateral/2, 
                                  box_pos[1] + box_side_front/2, 
-                                 box_pos[2] - box_side_top/2)                                 
+                                 box_pos[2] - box_side_top)                                 
 
     l_top_front_right = Point(box_pos[0] + box_side_lateral/2, 
                                  box_pos[1] - box_side_front/2, 
-                                 box_pos[2] + box_side_top/2)
+                                 box_pos[2])
     l_top_front_left = Point(box_pos[0] + box_side_lateral/2, 
                                  box_pos[1] + box_side_front/2, 
-                                 box_pos[2] + box_side_top/2)                                 
+                                 box_pos[2])                                 
     l_top_back_right = Point(box_pos[0] - box_side_lateral/2, 
                                  box_pos[1] - box_side_front/2, 
-                                 box_pos[2] + box_side_top/2)
+                                 box_pos[2])
     l_top_back_left = Point(box_pos[0] - box_side_lateral/2, 
                                  box_pos[1] + box_side_front/2, 
-                                 box_pos[2] + box_side_top/2)                                
+                                 box_pos[2])                                
     
     obj_moved = False
     i = 0
@@ -323,10 +323,10 @@ Test
 '''
 if __name__ == '__main__':
     
-    new_pos = compute_obj_pos([0.65,-0.05,-0.14], [0.65, -0.04, -0.13], [0.62, -0.07, -0.15])
+    new_pos = compute_obj_pos([0.65,-0.05,-0.09], [0.65, -0.04, -0.13], [0.62, -0.07, -0.15])
     print(new_pos)
     
-    print(identify_effect([0.65,-0.05,-0.14], new_pos[1]))
+#    print(identify_effect([0.65,-0.05,-0.09], new_pos[1]))
     
     
 #    print(identify_effect([-0.3,0,0]))
