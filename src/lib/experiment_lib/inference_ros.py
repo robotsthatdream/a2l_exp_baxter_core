@@ -1242,7 +1242,7 @@ def infere_mov(bn, ie, node_names, node_values):
     posterior = ie.posterior(bn.idFromName('move'))
 #    if sim_param.debug:
 #    print('\n')
-#    print(posterior)
+    print(posterior)
 #    print(posterior[0])
 #    print(posterior[-1])
 #    print(type(posterior))

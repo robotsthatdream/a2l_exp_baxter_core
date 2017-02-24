@@ -77,7 +77,7 @@ def basic_learning_dataset_size(dataset_type_vector,
                 else:
                     dataset_filename = \
                         '/home/maestre/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
-#                        '/home/maestre/indigo/baxter_ws/src/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'                            
+                        
             
             ## read dataset            
             raw_delta_vector = dataset.read_dataset(dataset_filename)

@@ -7,13 +7,13 @@ import math
 
 ''' Main parameters '''
 
-real_robot = True
+real_robot = False
 
 nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 64
 nb_min_inclination_sections = 64
 nb_min_distance_sections = 10
-exec_traj = True
+exec_traj = False
 single_init_pos = True ## if False, circle of init pos around the box
 
 semi_random_trajs = True ## initial trajs using dicretized movs
@@ -100,10 +100,11 @@ obj_moved_threshold = 0.1
 inferred_traj = []
 
 ''' Experiment set-up values '''
-obj_name_vector = ["cube", 'cylinder'] ## first iteraction with first object 
+obj_name_vector = ["cube", 'cylinder']
+dataset_nb_objects = 1
 moved_obj_name_vector = ['cube'] # moved_obj_name_vector
 #untucked_left_eef_pos = [0.58, 0.18, 0.11]
-untucked_left_eef_pos = [0.65, 0.25, -0.03]
+untucked_left_eef_pos = [0.65, 0.25, -0.03] ## to plot initial position
 ########### TODO RIGHTTTTTTTTTTTTTTTTTTTT INIT POS
 #obj_side = 0.1
 obj_displacement = 0.3

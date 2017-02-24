@@ -65,7 +65,8 @@ def read_dataset(filename):
     for line in lines:        
         current_delta_vector = []
         pos_rot_vector = line[:-2].split(',') ## remove final , and EOL
-        nb_obj = len(sim_param.obj_name_vector)
+        nb_obj = len(sim_param.obj_name_vector) ## expected
+        nb_dataset_obj = sim_param.dataset_nb_objects ## actual
         
         obj_initial_pos = [float(pos_rot_vector[6]),
                            float(pos_rot_vector[7]),

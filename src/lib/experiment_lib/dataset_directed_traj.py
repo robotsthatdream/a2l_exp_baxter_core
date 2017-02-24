@@ -50,12 +50,12 @@ def plot_setup(print_objects = False):
         eef_pos, obj_vector = get_environment_pos()
         
         pos_cube = obj_vector[0]
-        pos_cylinder = obj_vector[1]
+        obj_vector = [[pos_cube]]        
         
-        if exp_iros_two_obj:
-            obj_vector = [[pos_cylinder, pos_cube]]
-        else:
-            obj_vector = [[pos_cube]]
+        if push_cylinder:
+            pos_cylinder = obj_vector[1]
+            obj_vector.append(pos_cylinder)
+            
         plot_objects(ax, obj_vector)
 
     return ax
@@ -235,8 +235,32 @@ def create_diverse_trajs(traj,
                 else:
                     tmp_traj += obj_pos_vector[1]
                     tmp_traj += [2,2,2]
+
+                if exp_iros_one_obj:
+                    ## fake cylinder_pos based on cube pos
+#                    fake_pos = copy.copy(obj_pos_vector[0])
+#                
+#                    ## 2 areas created, not intersecting the trajectory space                                    
+#                    ## chose area
+#                    rand = random.randint(0,1)
+#                    if rand: ## area close to the robot
+#                        fake_pos[0] += random.uniform(0.1,0.2)
+#                    else:
+#                        fake_pos[0] -= random.uniform(0.1,0.2)                    
+#                    fake_pos[1] += random.uniform(-0.3,0.3)
+#                    fake_pos[2] = -0.075
+#                    fake_pos = [round(value, sim_param.round_value) for value in fake_pos]
+                        
+                    fake_pos = []
+                    fake_pos.append(obj_pos_vector[0][0] + 0.2)
+                    fake_pos.append(obj_pos_vector[0][1] + 0.2)
+                    fake_pos.append(-0.075)
+
+                    tmp_traj += fake_pos
+                    tmp_traj += [2,2,2]
+                    
             
-        ## final obj pos
+        ## add displacement for final obj pos
         tmp_traj.append(traj[-1][0])
         tmp_traj.append(traj[-1][1])
         tmp_traj.append(traj[-1][2])
@@ -253,9 +277,12 @@ def create_diverse_trajs(traj,
             displ_vector[0] += sim_param.obj_displacement
         tmp_obj_pos = [x+y for x,y in zip(obj_pos_vector[0], displ_vector)]
         tmp_traj += tmp_obj_pos
-        tmp_traj += zero_vector
+        tmp_traj += zero_vector        
         if exp_iros_two_obj:
             tmp_traj += obj_pos_vector[1]
+            tmp_traj += [2,2,2]
+        if exp_iros_one_obj:
+            tmp_traj += fake_pos
             tmp_traj += [2,2,2]
             
         return [tmp_traj]       
@@ -336,48 +363,49 @@ def generate_dataset(effect):
                                  final_traj_sections_z[i]])
             traj_vector.append(traj)
         
-        elif exp_iros_one_obj:
-            ## all trajs converge into a mid pos
-            mid_pos = copy.copy(cube_pos)
-            mid_pos[1] += 0.15
-            mid_pos[2] = round(mid_pos[2] - cube_height/2, 2) ## touch the center of the object
-            
-            if i != 0:
-                eef_pos_range = sim_param.new_obj_pos_dist
-                eef_pos[0] = eef_pos[0] + random.uniform(-eef_pos_range,eef_pos_range)    
-                eef_pos[1] = eef_pos[1] + random.uniform(-eef_pos_range,eef_pos_range)
-                eef_pos[2] = eef_pos[2] + random.uniform(-eef_pos_range,eef_pos_range)
-                eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]              
-            
-            ''' Create main traj '''           
-            var_x_vector = (linspace(eef_pos[0], cube_pos[0],
-                            int(nb_steps/2))).tolist()
-            var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
-            var_x_vector_tmp = [mid_pos[0]] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]    
-            var_x_vector += var_x_vector_tmp
-            
-            tmp_obj_pos = cube_pos
-            var_y_vector = (linspace(eef_pos[1], mid_pos[1],
-                            int(nb_steps/2))).tolist()
-            var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
-            var_y_vector_tmp = [mid_pos[1]] + (linspace(mid_pos[1], tmp_obj_pos[1], int(nb_steps/2))).tolist()[1:]
-            var_y_vector += var_y_vector_tmp
-            
-            var_z_vector = (linspace(eef_pos[2], mid_pos[2],
-                            int(nb_steps/2))).tolist()
-            var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
-            var_z_vector_tmp = [mid_pos[2]] + [mid_pos[2] for i in range(len(var_z_vector),nb_steps)][1:]
-            var_z_vector += var_z_vector_tmp
-            
-            traj = [[var_x_vector[i], var_y_vector[i], var_z_vector[i]] 
-                     for i in range(len(var_x_vector))]
-
-            traj_vector.append(traj)
+#        elif exp_iros_one_obj:
+#            ## all trajs converge into a mid pos
+#            mid_pos = copy.copy(cube_pos)
+#            mid_pos[1] += 0.15
+#            mid_pos[2] = round(mid_pos[2] - cube_height/2, 2) ## touch the center of the object
+#            
+#            if i != 0:
+#                eef_pos_range = sim_param.new_obj_pos_dist
+#                eef_pos[0] = eef_pos[0] + random.uniform(-eef_pos_range,eef_pos_range)    
+#                eef_pos[1] = eef_pos[1] + random.uniform(-eef_pos_range,eef_pos_range)
+#                eef_pos[2] = eef_pos[2] + random.uniform(-eef_pos_range,eef_pos_range)
+#                eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]              
+#            
+#            ''' Create main traj '''           
+#            var_x_vector = (linspace(eef_pos[0], cube_pos[0],
+#                            int(nb_steps/2))).tolist()
+#            var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
+#            var_x_vector_tmp = [mid_pos[0]] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]    
+#            var_x_vector += var_x_vector_tmp
+#            
+#            tmp_obj_pos = cube_pos
+#            var_y_vector = (linspace(eef_pos[1], mid_pos[1],
+#                            int(nb_steps/2))).tolist()
+#            var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
+#            var_y_vector_tmp = [mid_pos[1]] + (linspace(mid_pos[1], tmp_obj_pos[1], int(nb_steps/2))).tolist()[1:]
+#            var_y_vector += var_y_vector_tmp
+#            
+#            var_z_vector = (linspace(eef_pos[2], mid_pos[2],
+#                            int(nb_steps/2))).tolist()
+#            var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
+#            var_z_vector_tmp = [mid_pos[2]] + [mid_pos[2] for i in range(len(var_z_vector),nb_steps)][1:]
+#            var_z_vector += var_z_vector_tmp
+#            
+#            traj = [[var_x_vector[i], var_y_vector[i], var_z_vector[i]] 
+#                     for i in range(len(var_x_vector))]
+#
+#            traj_vector.append(traj)
         
-        elif exp_iros_two_obj:
+        elif exp_iros_one_obj or exp_iros_two_obj:
 
             cube_pos = obj_vector[0]
-            cylinder_pos = obj_vector[1]
+            if exp_iros_two_obj:
+                cylinder_pos = obj_vector[1]
 
             ''' Modify initial position '''            
             if i != 0:
@@ -393,37 +421,37 @@ def generate_dataset(effect):
             z_contact = round(cube_pos[2] - cube_height/2, 2)
 
             main_traj = [eef_pos]
-                        
-            main_traj.append([cube_pos[0] + random.uniform(-noise,noise), ## all trajs converge into a mid pos
-                              cube_pos[1] + 0.30 + random.uniform(-noise,noise*3),
-                              z_contact + random.uniform(-noise,noise)])
 
-#            mid_pos[1] += 0.45                              
-#            main_traj.append([0.45 + random.uniform(-noise,noise),
-#                              0.15 + random.uniform(-noise,noise),
-#                              mid_pos[2] + random.uniform(-noise,noise)])
-#            main_traj.append([0.85 + random.uniform(-noise/1,noise/1),
-#                              0.15 + random.uniform(-noise/1,noise/1),
-#                              mid_pos[2] + random.uniform(-noise/1,noise/1)])
-#            main_traj.append([0.65 + random.uniform(-noise/1,noise/1),
-#                              0 + random.uniform(-noise/1,noise/1),
-#                              mid_pos[2] + random.uniform(-noise/1,noise/1)])
-
-            main_traj.append([cube_pos[0] + random.uniform(-noise,noise), ## change direction
-                              cube_pos[1] + 0.25 + random.uniform(-noise,noise),
-                              z_contact + random.uniform(-noise,noise)])
-                              
-            main_traj.append([cube_pos[0] - 0.10 + random.uniform(-noise,noise), ## close
-                              cube_pos[1] + 0.15 + random.uniform(-noise,noise),
-                              z_contact + random.uniform(-noise,noise)])
-                              
-            main_traj.append([cube_pos[0] + random.uniform(-noise/1,noise/1), ## center cylinder
-                              cube_pos[1] + 0.15 + random.uniform(-noise/1,noise/1), ## y = 0
-                              z_contact + random.uniform(-noise/1,noise/1)])
-
-            main_traj.append([cube_pos[0] + random.uniform(-noise/1,noise/1), 
-                              cube_pos[1] - 0.05 + random.uniform(-noise/1,noise/1), ## mid_pos[1] - 0.35
-                              z_contact + random.uniform(-noise/1,noise/1)])
+            if exp_iros_one_obj:
+                main_traj.append([cube_pos[0] + random.uniform(-noise,noise), ## all trajs converge into a mid pos
+                                  cube_pos[1] + 0.30 + random.uniform(-noise,noise*3),
+                                  z_contact + random.uniform(-noise,noise)])    
+                                  
+                main_traj.append([cube_pos[0] + random.uniform(-noise/1,noise/1), 
+                                  cube_pos[1] - 0.05 + random.uniform(-noise/1,noise/1),
+                                  z_contact + random.uniform(-noise/1,noise/1)])                                  
+                
+            else:
+                            
+                main_traj.append([cube_pos[0] + random.uniform(-noise,noise), ## all trajs converge into a mid pos
+                                  cube_pos[1] + 0.30 + random.uniform(-noise,noise*3),
+                                  z_contact + random.uniform(-noise,noise)])
+    
+                main_traj.append([cube_pos[0] + random.uniform(-noise,noise), ## change direction
+                                  cube_pos[1] + 0.25 + random.uniform(-noise,noise),
+                                  z_contact + random.uniform(-noise,noise)])
+                                  
+                main_traj.append([cube_pos[0] - 0.10 + random.uniform(-noise,noise), ## close
+                                  cube_pos[1] + 0.15 + random.uniform(-noise,noise),
+                                  z_contact + random.uniform(-noise,noise)])
+                                  
+                main_traj.append([cube_pos[0] + random.uniform(-noise/1,noise/1), ## center cylinder
+                                  cube_pos[1] + 0.15 + random.uniform(-noise/1,noise/1), ## y = 0
+                                  z_contact + random.uniform(-noise/1,noise/1)])
+    
+                main_traj.append([cube_pos[0] + random.uniform(-noise/1,noise/1), 
+                                  cube_pos[1] - 0.05 + random.uniform(-noise/1,noise/1),
+                                  z_contact + random.uniform(-noise/1,noise/1)])
 
             ''' Split each traj on small segments '''
             var_x_vector = []
@@ -431,14 +459,21 @@ def generate_dataset(effect):
             var_z_vector = []
             nb_segments = 4
             for pos in range(len(main_traj)-1):
-                if pos == 0:
-                    tmp_nb_segments = nb_segments * 2
-                elif pos == 1:
-                    tmp_nb_segments = 3
-                elif pos == 4:
-                    tmp_nb_segments = nb_segments * 2
-                else:
-                    tmp_nb_segments = nb_segments
+                
+                if exp_iros_one_obj:
+                    if pos == 0:
+                        tmp_nb_segments = nb_segments * 2
+                    elif pos == 1:
+                        tmp_nb_segments = nb_segments * 4
+                else:                
+                    if pos == 0:
+                        tmp_nb_segments = nb_segments * 2
+                    elif pos == 1:
+                        tmp_nb_segments = 3
+                    elif pos == 4:
+                        tmp_nb_segments = nb_segments * 2
+                    else:
+                        tmp_nb_segments = nb_segments
                 
                 
                 if main_traj[pos][0] != main_traj[pos+1][0]: ## X
@@ -471,8 +506,11 @@ def generate_dataset(effect):
             traj_vector.append(traj)        
         
         ''' Create diverse trajs '''
+        obj_vector = [cube_pos]
+        if exp_iros_two_obj:
+            obj_vector.append(cylinder_pos)
         tmp_div_traj_vector = create_diverse_trajs(traj, 
-                                                   [cube_pos, cylinder_pos],
+                                                   obj_vector,
                                                    effect)
         traj_diverse_vector += tmp_div_traj_vector
     
@@ -531,7 +569,7 @@ def read_dataset(filename):
 if __name__ == "__main__":
 
     exp_two_push = False
-    exp_iros_one_obj = False
+    exp_iros_one_obj = True
     exp_iros_two_obj = not exp_iros_one_obj
     
     cube_height = 0.08
@@ -551,7 +589,7 @@ if __name__ == "__main__":
     nb_objects = len(obj_name_vector)
     block_of_info = 6 + 6*nb_objects
     
-    create = False
+    create = True
     
     if create: ## create
         print('GENERATING DATASET')
