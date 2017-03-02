@@ -381,8 +381,15 @@ def infere_trajectories(current_results_folder,
         if curr_nb_infere_trajs == 0:
             ''' Restart scenario '''
             if sim_param.real_robot:
+                l_eef_init_pos_x = rospy.get_param("/eef_left_init_pos_x")
+                l_eef_init_pos_y = rospy.get_param("/eef_left_init_pos_y")
+                l_eef_init_pos_z = rospy.get_param("/eef_left_init_pos_z")
+#                success = ros_services.call_move_to_initial_position(
+#                            sim_param.untucked_left_eef_pos)
                 success = ros_services.call_move_to_initial_position(
-                            sim_param.untucked_left_eef_pos)
+                            [l_eef_init_pos_x,
+                            l_eef_init_pos_y,
+                            l_eef_init_pos_z]) 
                 if not success:
                     print("ERROR - restart_world failed")    
             else:            
@@ -394,8 +401,13 @@ def infere_trajectories(current_results_folder,
     obj_pos_dict = OrderedDict()
     for obj_name in sim_param.obj_name_vector:
         obj_pos = ros_services.call_get_model_state(obj_name)
-        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]        
-        if not sim_param.real_robot:
+        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
+        if sim_param.real_robot:
+            if obj_name == 'cube':
+                obj_pos[2] = -0.09
+            else:
+                obj_pos[2] = -0.08            
+        else:
             if obj_name == 'cube':
                 obj_pos[2] = round(obj_pos[2] + 0.055,3)
             else:
@@ -1242,7 +1254,7 @@ def infere_mov(bn, ie, node_names, node_values):
     posterior = ie.posterior(bn.idFromName('move'))
 #    if sim_param.debug:
 #    print('\n')
-    print(posterior)
+#    print(posterior)
 #    print(posterior[0])
 #    print(posterior[-1])
 #    print(type(posterior))

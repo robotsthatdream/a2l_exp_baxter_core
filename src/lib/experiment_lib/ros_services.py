@@ -84,9 +84,9 @@ a
 def call_get_model_state(model_name):
     if sim_param.real_robot:
         if model_name =='cube':
-            model_id = 1
-        elif model_name =='cylinder':
             model_id = 0
+        elif model_name =='cylinder':
+            model_id = 1
         else:
             print('Unknown object ID for', model_name)
             sys.exit()        

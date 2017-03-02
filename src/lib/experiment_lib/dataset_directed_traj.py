@@ -23,7 +23,7 @@ import mpl_toolkits.mplot3d.art3d as art3d
 import numpy as np
 from scipy.linalg import norm
 
-def plot_setup(print_objects = False):
+def plot_setup(obj_vector):
     
     # plot figure
     fig = plt.figure(figsize=(7,7))
@@ -46,17 +46,14 @@ def plot_setup(print_objects = False):
     plt.xlabel('x-axis')
     plt.ylabel('y-axis')
     
-    if print_objects:
-        eef_pos, obj_vector = get_environment_pos()
+    pos_cube = obj_vector[0]
+    tmp_obj_vector = [[pos_cube]]        
+    
+    if push_cylinder:
+        pos_cylinder = obj_vector[1]
+        tmp_obj_vector[0].append(pos_cylinder)
         
-        pos_cube = obj_vector[0]
-        obj_vector = [[pos_cube]]        
-        
-        if push_cylinder:
-            pos_cylinder = obj_vector[1]
-            obj_vector.append(pos_cylinder)
-            
-        plot_objects(ax, obj_vector)
+    plot_objects(ax, tmp_obj_vector)
 
     return ax
     
@@ -192,16 +189,18 @@ def get_environment_pos():
 
     cube_pos = ros_services.call_get_model_state(obj_name_vector[0])
     cube_pos = [round(pos, sim_param.round_value + 1) for pos in cube_pos[0:3]]
-    cube_pos[2] = round(cube_pos[2] + cube_height/2 + 0.015, 
-                        sim_param.round_value + 1)
+#    cube_pos[2] = round(cube_pos[2] + cube_height/2 + 0.015, 
+#                        sim_param.round_value + 1)
+    cube_pos[2] = -0.09
     object_vector.append(cube_pos)
     print('cube pos', cube_pos)
     
     if push_cylinder:
         cylinder_pos = ros_services.call_get_model_state(obj_name_vector[1])        
         cylinder_pos = [round(pos, sim_param.round_value + 1) for pos in cylinder_pos[0:3]]
-        cylinder_pos[2] = round(cylinder_pos[2] + cylinder_height/2 + 0.02, 
-                                sim_param.round_value + 1)
+#        cylinder_pos[2] = round(cylinder_pos[2] + cylinder_height/2 + 0.02, 
+#                                sim_param.round_value + 1)
+        cylinder_pos[2] = -0.08
         object_vector.append(cylinder_pos)
         print('cylinder_pos', cylinder_pos)
     
@@ -363,44 +362,6 @@ def generate_dataset(effect):
                                  final_traj_sections_z[i]])
             traj_vector.append(traj)
         
-#        elif exp_iros_one_obj:
-#            ## all trajs converge into a mid pos
-#            mid_pos = copy.copy(cube_pos)
-#            mid_pos[1] += 0.15
-#            mid_pos[2] = round(mid_pos[2] - cube_height/2, 2) ## touch the center of the object
-#            
-#            if i != 0:
-#                eef_pos_range = sim_param.new_obj_pos_dist
-#                eef_pos[0] = eef_pos[0] + random.uniform(-eef_pos_range,eef_pos_range)    
-#                eef_pos[1] = eef_pos[1] + random.uniform(-eef_pos_range,eef_pos_range)
-#                eef_pos[2] = eef_pos[2] + random.uniform(-eef_pos_range,eef_pos_range)
-#                eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos]              
-#            
-#            ''' Create main traj '''           
-#            var_x_vector = (linspace(eef_pos[0], cube_pos[0],
-#                            int(nb_steps/2))).tolist()
-#            var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
-#            var_x_vector_tmp = [mid_pos[0]] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]    
-#            var_x_vector += var_x_vector_tmp
-#            
-#            tmp_obj_pos = cube_pos
-#            var_y_vector = (linspace(eef_pos[1], mid_pos[1],
-#                            int(nb_steps/2))).tolist()
-#            var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
-#            var_y_vector_tmp = [mid_pos[1]] + (linspace(mid_pos[1], tmp_obj_pos[1], int(nb_steps/2))).tolist()[1:]
-#            var_y_vector += var_y_vector_tmp
-#            
-#            var_z_vector = (linspace(eef_pos[2], mid_pos[2],
-#                            int(nb_steps/2))).tolist()
-#            var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
-#            var_z_vector_tmp = [mid_pos[2]] + [mid_pos[2] for i in range(len(var_z_vector),nb_steps)][1:]
-#            var_z_vector += var_z_vector_tmp
-#            
-#            traj = [[var_x_vector[i], var_y_vector[i], var_z_vector[i]] 
-#                     for i in range(len(var_x_vector))]
-#
-#            traj_vector.append(traj)
-        
         elif exp_iros_one_obj or exp_iros_two_obj:
 
             cube_pos = obj_vector[0]
@@ -515,13 +476,8 @@ def generate_dataset(effect):
         traj_diverse_vector += tmp_div_traj_vector
     
     ''' Plot traj '''
-    ax = plot_setup(True)
+    ax = plot_setup(obj_vector)
     plot_traj(ax, traj_vector)
-        
-#    ''' Plot new trajs '''
-#    ax = plot_setup()
-#    for curr_traj in traj_diverse_vector:
-#        plot_traj_eef_obj(ax, curr_traj)
         
     plt.show()
 
@@ -569,8 +525,8 @@ def read_dataset(filename):
 if __name__ == "__main__":
 
     exp_two_push = False
-    exp_iros_one_obj = True
-    exp_iros_two_obj = not exp_iros_one_obj
+    exp_iros_one_obj = False
+    exp_iros_two_obj = True
     
     cube_height = 0.08
     cylinder_height = 0.09
@@ -578,12 +534,11 @@ if __name__ == "__main__":
     if sim_param.real_robot:
         filename = '/home/maestre/.ros/eef_trajectory_recorder.csv'    
     else:
-        filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'
-#        filename = '../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'        
+        filename = '../../../../a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv'    
 
-        obj_name_vector = ['cube']
-        if exp_two_push or exp_iros_two_obj:
-            obj_name_vector.append('cylinder')
+    obj_name_vector = ['cube']
+    if exp_two_push or exp_iros_two_obj:
+        obj_name_vector.append('cylinder')
             
     push_cylinder = len(obj_name_vector) > 1            
     nb_objects = len(obj_name_vector)
@@ -593,16 +548,17 @@ if __name__ == "__main__":
     
     if create: ## create
         print('GENERATING DATASET')
-        nb_diverse_trajs = 50
+        nb_diverse_trajs = 100
         wp_change = 0.03
         round_value = 2
         
         nb_init_traj = nb_diverse_trajs
         nb_steps = 18 ## even number
-        
-        success = ros_services.call_restart_world("all")
-        if not success:
-            print("ERROR - restart_world failed")
+             
+        if not sim_param.real_robot:
+            success = ros_services.call_restart_world("all")
+            if not success:
+                print("ERROR - restart_world failed")
         
         traj_vector = generate_dataset('right')
         res = write_dataset(traj_vector)
@@ -610,7 +566,7 @@ if __name__ == "__main__":
     else: ## plot
         print('VISUALIZING DATASET')
         traj_vector, obj_vector = read_dataset(filename)
-        ax = plot_setup()
+        ax = plot_setup(obj_vector)
         color_vector = plot_traj(ax, traj_vector)
         plot_objects(ax, obj_vector)
         plot_object_change(ax, obj_vector, color_vector)

@@ -7,7 +7,7 @@ import math
 
 ''' Main parameters '''
 
-real_robot = False
+real_robot = True
 
 nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 64
