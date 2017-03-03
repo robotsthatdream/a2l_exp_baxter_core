@@ -111,10 +111,7 @@ def read_dataset(filename):
                 current_x,current_y,current_z,
                 next_x, next_y,next_z,
                 current_next_obj_pos_vector)
-                                
-#                current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
-#                next_obj_pos_x, next_obj_pos_y, next_obj_pos_z,
-#                True) ## Extended trajs are always moving the obj            
+         
             current_delta_vector.append(current_delta)
         delta_vector += current_delta_vector
         

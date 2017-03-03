@@ -30,13 +30,19 @@ def compute_distance_discr():
     if sim_param.discr_hand_coded:
         return None
     else:
-        if sim_param.experiment_type == 'a2l_dataset_extension':
-            discr_sections = discr_dist.Sections( sim_param.obj_side/2,
-                                          sim_param.circumference_radio,
-                                  sim_param.nb_min_distance_sections)
+        if sim_param.experiment_type == 'a2l_dataset_extension': ## A2L experiment
+#            discr_sections = discr_dist.Sections( sim_param.obj_side/2,
+#                                          sim_param.circumference_radio,
+#                                  sim_param.nb_min_distance_sections)
+            discr_sections = discr_dist.Sections( min(sim_param.cube_x,
+                                                      sim_param.cube_y,
+                                                      sim_param.cube_z)/2,
+                                                  sim_param.circumference_radio,
+                                                  sim_param.nb_min_distance_sections)        
         else:
-            discr_sections = discr_dist.Sections(0,1,
-                                  sim_param.nb_min_distance_sections)            
+            discr_sections = discr_dist.Sections(0,
+                                                 1, ## useless
+                                                 sim_param.nb_min_distance_sections)            
         if sim_param.debug:
             discr_sections.print_me()
         

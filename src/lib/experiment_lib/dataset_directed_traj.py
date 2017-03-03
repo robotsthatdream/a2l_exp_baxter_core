@@ -75,7 +75,7 @@ def plot_objects(ax, obj_vector):
     obj_pos = pos_cube
     lim = .3
     ax.set_xlim3d([(obj_pos[0]-lim), (obj_pos[0]+lim)])
-    ax.set_ylim3d([(obj_pos[1]-lim), (obj_pos[1]+lim*1)])
+    ax.set_ylim3d([(obj_pos[1]-lim), (obj_pos[1]+lim)])
     ax.set_zlim3d([(obj_pos[2]-lim), (obj_pos[2]+lim)])             
              
     if push_cylinder:

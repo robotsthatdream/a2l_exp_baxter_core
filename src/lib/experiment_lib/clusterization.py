@@ -29,20 +29,20 @@ if __name__ == '__main__':
     raw_dataset = dataset.read_dataset(filename)
     
     ## extract obj final positions
-    initial_obj_pos = [raw_dataset[0].get_obj_init().get_x(), \
-                        raw_dataset[0].get_obj_init().get_y(), \
-                        raw_dataset[0].get_obj_init().get_z()]
+    initial_obj_pos = [raw_dataset[0].get_obj_final(0)[0], \
+                        raw_dataset[0].get_obj_final(0)[1], \
+                        raw_dataset[0].get_obj_final(0)[2]]
 #    print(initial_obj_pos)    
 
     final_obj_pos_vector = []
     for delta in raw_dataset:
-        current_obj_pos = [delta.get_obj_final().get_x(),
-                                     delta.get_obj_final().get_y()] #,
-#                                     delta.get_obj_final().get_z()]
+        current_obj_pos = [delta.get_obj_final(0)[0],
+                           delta.get_obj_final(0)[1]] #,
+#                          delta.get_obj_init(0)[2]]
+#        print(current_obj_pos) 
         
         if (abs(initial_obj_pos[0] - current_obj_pos[0]) > 0.01) or \
-            (abs(initial_obj_pos[1] - current_obj_pos[1]) > 0.01) :
-#            print(current_obj_pos)                                     
+            (abs(initial_obj_pos[1] - current_obj_pos[1]) > 0.01) :                
             final_obj_pos_vector.append(current_obj_pos)                
     
     ## clusterize them
@@ -63,7 +63,7 @@ if __name__ == '__main__':
                                      random.randint(0,1) + random.uniform(-0.3,0.3)] 
                                      for i in range(100)]
 
-        ## big fake dataset                 
+        ## big fake dataset
         if 0:
             final_obj_pos_vector = [[random.randint(0,3) + random.uniform(-0.2,0.2),
                                      random.randint(0,3) + random.uniform(-0.2,0.2)] 
@@ -89,6 +89,7 @@ if __name__ == '__main__':
                    s=75, alpha=0.4, label="xmeans")
 
     else:
+        ''' K means '''
         data = np.array(final_obj_pos_vector)
         random_state = 5
         y_pred = MiniBatchKMeans(n_clusters=4, random_state=random_state).fit_predict(data)

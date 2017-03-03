@@ -121,12 +121,9 @@ def check_obj_moved(box_pos,
 
 #    box_side = sim_param.obj_side
 
-    if sim_param.experiment_type == 'a2l_reproduce_dataset':
-        box_side_front = sim_param.cube_x ## side in front of the robot
-        box_side_lateral = sim_param.cube_y
-        box_side_top = sim_param.cube_z
-    else:
-        box_side_front = box_side_lateral = box_side_top = sim_param.box_side
+    box_side_front = sim_param.cube_x ## side in front of the robot
+    box_side_lateral = sim_param.cube_y
+    box_side_top = sim_param.cube_z
         
     ## object corners
     l_bottom_front_right = Point(box_pos[0] + box_side_front/2,

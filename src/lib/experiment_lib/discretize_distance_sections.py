@@ -96,7 +96,7 @@ def compute_distance(eef_pos, current_obj_pos,
 Test
 '''
 if __name__ == '__main__':
-    discr_sections = Sections(sim_param.obj_side/2,
+    discr_sections = Sections(0,
                               sim_param.circumference_radio,
                               sim_param.nb_min_distance_sections)
 #    discr_sections = Sections(

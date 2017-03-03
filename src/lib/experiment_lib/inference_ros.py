@@ -774,40 +774,9 @@ def simulate_traj(bn, ie,
         current_eef_y = eef_traj[-1][1]
         current_eef_z = eef_traj[-1][2]
         
-        ## compute neighbours virtual positions
-        nn_pos_vector =  [[current_eef_x,
-                           current_eef_y,
-                           current_eef_z]]        
-        add_dist = sim_param.step_length/2
-        
-        for j in range(6):
-            tmp_pos = [current_eef_x,
-                       current_eef_y,
-                       current_eef_z]
-            if j == 0: ## front
-                tmp_pos[0] = current_eef_x + add_dist
-            elif j == 1: ## back
-                tmp_pos[0] = current_eef_x - add_dist
-            elif j == 2: ## right
-                tmp_pos[1] = current_eef_y - add_dist                
-            elif j == 3: ## left
-                tmp_pos[1] = current_eef_y + add_dist                
-            elif j == 4: ## up
-                tmp_pos[2] = current_eef_z + add_dist
-            elif j == 5: ## down
-                tmp_pos[2] = current_eef_z - add_dist
-            tmp_pos = [round(curr_pos, sim_param.round_value) 
-                             for curr_pos in tmp_pos]
-#            print(j, tmp_pos)
-            nn_pos_vector.append(tmp_pos)
-        
-        ## compute their prob for next move
         virt_inference_vector = []
-        for curr_virt_pos in nn_pos_vector:        
-            current_eef_x_tmp = curr_virt_pos[0]
-            current_eef_y_tmp = curr_virt_pos[1]
-            current_eef_z_tmp = curr_virt_pos[2]
-            
+        if sim_param.experiment_type != 'a2l_reproduce_dataset':
+
             ## compute current variables value
             node_names = ['effect']
             node_values = [expected_effect]
@@ -815,18 +784,18 @@ def simulate_traj(bn, ie,
             for obj_name in sim_param.obj_name_vector:
 #                print('obj pos inferring -->', obj_name, obj_pos_dict[obj_name])                            
                 distance = discr_dist.compute_distance(
-                    [current_eef_x_tmp,current_eef_y_tmp], 
+                    [current_eef_x,current_eef_y], 
                     obj_pos_dict[obj_name],
                     current_dist)
                 
                 orientation = discr_orien.compute_orientation_discr(
-                    [current_eef_x_tmp,current_eef_y_tmp], 
+                    [current_eef_x,current_eef_y], 
                     obj_pos_dict[obj_name],
                     current_orien)
                     
                 inclination = discr_inclin.compute_inclination_discr(
                     obj_pos_dict[obj_name],
-                    [current_eef_x_tmp,current_eef_y_tmp,current_eef_z_tmp],             
+                    [current_eef_x,current_eef_y,current_eef_z],             
                     current_inclin)                    
                     
                 node_names += ['distance'+str(obj_id),
@@ -846,35 +815,120 @@ def simulate_traj(bn, ie,
             except Exception as e: 
                 if sim_param.debug_infer:
                     print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!!', e)
-                    print([curr_virt_pos, 
+                    print([0, ## virtual position not relevant
                            node_values])
-                virt_inference_vector.append([curr_virt_pos, 
+                virt_inference_vector.append([0, ## virtual position not relevant
                                              '',
                                              '', 
                                              0]) ## to avoid being selected
-                continue
+                                             
+            virt_inference_vector.append([0, ## virtual position not relevant 
+                                         node_values,
+                                         next_mov_discr, 
+                                         prob_value])                                               
+
+        else:
+            ## compute neighbours virtual positions
+            nn_pos_vector =  [[current_eef_x,
+                               current_eef_y,
+                               current_eef_z]]        
+            add_dist = sim_param.step_length/2
+            
+            for j in range(sim_param.nb_NN):
+                tmp_pos = [current_eef_x,
+                           current_eef_y,
+                           current_eef_z]
+                if j == 0: ## front
+                    tmp_pos[0] = current_eef_x + add_dist
+                elif j == 1: ## back
+                    tmp_pos[0] = current_eef_x - add_dist
+                elif j == 2: ## right
+                    tmp_pos[1] = current_eef_y - add_dist                
+                elif j == 3: ## left
+                    tmp_pos[1] = current_eef_y + add_dist                
+                elif j == 4: ## up
+                    tmp_pos[2] = current_eef_z + add_dist
+                elif j == 5: ## down
+                    tmp_pos[2] = current_eef_z - add_dist
+                tmp_pos = [round(curr_pos, sim_param.round_value) 
+                                 for curr_pos in tmp_pos]
+    #            print(j, tmp_pos)
+                nn_pos_vector.append(tmp_pos)
+            
+            ## compute their prob for next move            
+            for curr_virt_pos in nn_pos_vector:        
+                current_eef_x_tmp = curr_virt_pos[0]
+                current_eef_y_tmp = curr_virt_pos[1]
+                current_eef_z_tmp = curr_virt_pos[2]
+                
+                ## compute current variables value
+                node_names = ['effect']
+                node_values = [expected_effect]
+                obj_id = 0
+                for obj_name in sim_param.obj_name_vector:
+    #                print('obj pos inferring -->', obj_name, obj_pos_dict[obj_name])                            
+                    distance = discr_dist.compute_distance(
+                        [current_eef_x_tmp,current_eef_y_tmp], 
+                        obj_pos_dict[obj_name],
+                        current_dist)
+                    
+                    orientation = discr_orien.compute_orientation_discr(
+                        [current_eef_x_tmp,current_eef_y_tmp], 
+                        obj_pos_dict[obj_name],
+                        current_orien)
+                        
+                    inclination = discr_inclin.compute_inclination_discr(
+                        obj_pos_dict[obj_name],
+                        [current_eef_x_tmp,current_eef_y_tmp,current_eef_z_tmp],             
+                        current_inclin)                    
+                        
+                    node_names += ['distance'+str(obj_id),
+                                   'orientation'+str(obj_id),
+                                   'inclination'+str(obj_id)]
+                    node_values += [distance, orientation, inclination]
+                    
+                    obj_id += 1
+                    
+                ## infere next move            
+                try:                
+                    next_mov_discr, prob_value, delta_nb_var, same_prob = \
+                        infere_mov(bn, ie,                                        
+                                   node_names,
+                                   node_values)
+                    print(node_values, next_mov_discr, prob_value)
+                except Exception as e: 
+                    if sim_param.debug_infer:
+                        print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!!', e)
+                        print([curr_virt_pos, 
+                               node_values])
+                    virt_inference_vector.append([curr_virt_pos, 
+                                                 '',
+                                                 '', 
+                                                 0]) ## to avoid being selected
+                    continue
             
             if sim_param.debug_infer:
                 print([curr_virt_pos, 
                        node_values,
                        next_mov_discr, 
                        prob_value])
+                       
             virt_inference_vector.append([curr_virt_pos, 
                                          node_values,
                                          next_mov_discr, 
                                          prob_value])                
         
-        ## check if same prob for all close points
-        prob_found = all([x[-1]==virt_inference_vector[0][-1] for x in virt_inference_vector])
-        if prob_found:
-            print('-------------------------------> SAME PROB', 
-                  virt_inference_vector[0][-1])
-            if virt_inference_vector[0][-1] == 0:
-                print('-------------------------------> NO MOVE INFERRED')
-                print(node_values)
-                return eef_traj, False, ''
-
-        print(node_values)
+            ## check if same prob for all close points
+            prob_found = all([x[-1]==virt_inference_vector[0][-1] for x in virt_inference_vector])
+            if prob_found and len(virt_inference_vector) > 2:
+                print('-------------------------------> SAME PROB', 
+                      virt_inference_vector[0][-1])
+                if virt_inference_vector[0][-1] == 0:
+                    print('-------------------------------> NO MOVE INFERRED')
+                    print(node_values)
+                    return eef_traj, False, ''
+    
+            print(node_values)
                 
 #        ## MOVE 
 #        ## with higher prob    
