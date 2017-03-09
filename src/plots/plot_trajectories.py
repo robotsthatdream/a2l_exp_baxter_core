@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import os, sys
 lib_exp_path = os.path.realpath(os.path.abspath(
-                os.path.join('..', '..', '..', 'a2l_exp_baxter_core', 'src')))
+                os.path.join('..')))
 sys.path.append(lib_exp_path)
 import simulation_parameters as sim_param
 
@@ -159,9 +159,10 @@ def plot_trajs_3d(radius,
 #        if nb_traj != 3:
 #            nb_traj += 1
 #            continue
-        if nb_traj != 0:
-            nb_traj += 1
-            continue
+
+#        if nb_traj != 0:
+#            nb_traj += 1
+#            continue
         
         print('-------------> INIT POS', nb_traj//4)
         # plot figure
@@ -273,7 +274,7 @@ if __name__ == '__main__':
     obj_pos = [0.65, 0.1, -0.145]
     radius = 0.2
     
-    traj_vector = get_trajs("../generated_datasets/directed_dataset.csv")
+    traj_vector = get_trajs("/home/maestre/git/a2l_exp_baxter_actions/src/generated_datasets/directed_dataset.csv")
     print('Nb trajs :', len(traj_vector))
 #    plot_trajs_2d(radius, 
 #               obj_pos,

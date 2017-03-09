@@ -9,7 +9,7 @@ import math
 
 real_robot = False
 
-nb_min_init_pos = 1 ## better if mod 4
+nb_min_init_pos = 4 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
@@ -23,7 +23,7 @@ discr_random = False
 ''' Global variables '''
 print_time = False ## print elapsed time for some functions
 plot_dataset_stats = True ## plot the content of the discretized dataset
-new_dataset = False ## True to generate a new dataset, False to use current one
+new_dataset = True ## True to generate a new dataset, False to use current one
 dpi = 300 
 round_value = 2
 
@@ -53,8 +53,8 @@ distance_param = True
 
 ''' Scores '''
 score_likelihood = False
-score_bic = True
-score_aic = False
+score_bic = False
+score_aic = True
 score_k2 = False
 
 ''' Stats '''
@@ -79,7 +79,8 @@ distance_discr_vector_size = 3
 experiment_type = 'a2l_dataset_extension'
 plot_dataset_size_score = True ## plot the score in the dataset size plots
 nb_dataset_sizes = 1 ## number of increments of init pos : 8->16->32->64
-eef_z_value = 0.14
+#eef_z_value = 0.14
+eef_z_value = -0.145
 
 ''' Experiment Reproduce dataset (learn by demonstration) '''
 #experiment_type = 'a2l_reproduce_dataset'
@@ -104,7 +105,7 @@ obj_name_vector = ["cube"]#, 'cylinder']
 dataset_nb_objects = 1
 moved_obj_name_vector = ['cube'] # moved_obj_name_vector
 #untucked_left_eef_pos = [0.58, 0.18, 0.11]
-untucked_left_eef_pos = [0.65, 0.1, 0.14] ## to plot initial position
+untucked_left_eef_pos = [0.85, 0.1, 0.14] ## to plot initial position
 ########### TODO RIGHTTTTTTTTTTTTTTTTTTTT INIT POS
 #obj_side = 0.1
 obj_displacement = 0.3
@@ -117,7 +118,7 @@ fixed_obj_pos = False ## if false random obj pos during validation phase
 #obj_displacement = obj_side
 #same_move_value = 0.015
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
-step_length = 0 # obj_side/2 ## online computation based on dataset 
+step_length = 0.05 # obj_side/2 ## online computation based on dataset 
 random_max_movs = 7
 inferred_max_moves = 30
 max_nb_executed_deltas = inferred_max_moves
@@ -159,10 +160,10 @@ perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 1
-extend_max_trajs = 50
+nb_adapted_iterations = 2
+extend_max_trajs = 25
 extend_max_movs = random_max_movs/2
-nb_init_pos_for_adaption = 4
+nb_init_pos_for_adaption = nb_min_init_pos
 score_threshold = 0
 only_store_different_effects = False ## if TRUE only store new effects obtained
                                     ## based on a succesfull traj (better diversity)

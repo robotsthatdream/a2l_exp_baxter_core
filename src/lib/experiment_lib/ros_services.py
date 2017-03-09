@@ -92,7 +92,10 @@ def call_get_model_state(model_name):
             sys.exit()        
         return call_get_real_model_state(model_id)
     else:
-        return call_get_simulated_model_state(model_name)
+#        return call_get_simulated_model_state(model_name)
+        return [call_get_simulated_model_state(model_name)[0],
+               call_get_simulated_model_state(model_name)[1],
+               call_get_simulated_model_state(model_name)[2]]
 
 def call_get_real_model_state(model_id):
     service_name = 'a2l/get_real_model_state'

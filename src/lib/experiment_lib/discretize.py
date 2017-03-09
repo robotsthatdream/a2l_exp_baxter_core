@@ -185,8 +185,8 @@ def save_discr_deltas(dataset_filename, discr_delta_vector):
         traj_pos += 1
     file.close()
         
-    if sim_param.print_discr_random_dataset:
-        plt.show()    
+#    if sim_param.print_discr_random_dataset:
+#        plt.show()    
         
 '''
 Test

@@ -130,8 +130,8 @@ Main
 if __name__ == "__main__":
  
     ''' Experiment configuration '''
-    dataset_type_vector = ['directed']
-#    dataset_type_vector = ['random']    
+#    dataset_type_vector = ['directed']
+    dataset_type_vector = ['random']    
 #    dataset_type_vector = ['directed', 'random']
 
 #    learn_algo_vector = ['hard-coded', 'hillclimbing', 'k2']    
@@ -342,7 +342,7 @@ if __name__ == "__main__":
                         previous_iter_dataset_stats_class,
                         sim_param.nb_init_pos_for_adaption, ## 8
                         learn_algo_vector,
-                        initial_obj_pos,
+#                        initial_obj_pos,
                         current_results_folder, 
                         current_orien_discr, 
                         current_inclin_discr,
@@ -466,7 +466,7 @@ if __name__ == "__main__":
                     
             ## plot last dataset generated
             filename = \
-                sim_param.current_generated_files_folder + \
+                sim_param.generated_files_folder + \
                 'random_discr_wps_iteration_' + str(nb_iter) + '.csv'
             dataset_stats.plot_dataset_stats(filename)
                     

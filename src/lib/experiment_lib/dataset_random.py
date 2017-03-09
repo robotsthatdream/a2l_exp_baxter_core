@@ -18,37 +18,51 @@ import environment_delta as delta
 import environment_setup as setup
 import discretize_effect as discr
 import simulation_parameters as sim_param
+import ros_services
         
+from collections import OrderedDict
 
 '''
-Input : nb initial positions of the experiment
-Output : random dataset of trajectories to move the obj
+Generate random trajs from each initial position
 '''
 def create_discr_trajs(nb_initial_pos, 
                        single_init_pos = False,
                        single_pos = 0):
+
+    ''' Get all object pos'''
+    obj_pos_dict = OrderedDict()
+    for obj_name in sim_param.obj_name_vector:
+        obj_pos = ros_services.call_get_model_state(obj_name)
+        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
+        obj_pos_dict[obj_name] = obj_pos
+
     
     ''' Big circle ''' 
      
     # generate circle positions
     list_x_axis, list_y_axis, list_z_axis = \
-        setup.gen_init_eef(nb_initial_pos)
+        setup.gen_init_eef(nb_initial_pos,
+                           sim_param.untucked_left_eef_pos[0] - obj_pos_dict[sim_param.obj_name_vector[0]][0],
+                           obj_pos_dict[sim_param.obj_name_vector[0]])
     
     if __name__ == '__main__':
         ''' Plot canvas ''' 
         fig = plt.figure()
-        fig.set_size_inches(7, 7)
+        fig.set_size_inches(6, 6)
         ax = fig.add_axes([0, 0, 1, 1])
         
         # set axis limits
-        plt.xlim(-1.2,1.2)
-        plt.ylim(-1.2,1.2)
+        lim = 0.1 + sim_param.untucked_left_eef_pos[0] - obj_pos_dict[sim_param.obj_name_vector[0]][0]
+        plt.xlim(obj_pos_dict["cube"][0] - lim,
+                 obj_pos_dict["cube"][0] + lim)
+        plt.ylim(obj_pos_dict["cube"][1] - lim,
+                 obj_pos_dict["cube"][1] + lim)
     #        ax.axis('off')
      
         # plot the origin
-        origin = Rectangle((sim_param.obj_pos[0]-sim_param.obj_side/2, 
-                            sim_param.obj_pos[1]-sim_param.obj_side/2), 
-                           sim_param.obj_side, sim_param.obj_side, fc="grey")
+        origin = Rectangle((obj_pos_dict["cube"][0]-sim_param.cube_x/2, 
+                            obj_pos_dict["cube"][1]-sim_param.cube_y/2), 
+                            sim_param.cube_x, sim_param.cube_y, fc="grey")
         ax.add_patch(origin)
          
         # plot the big circle points
@@ -88,20 +102,24 @@ def create_discr_trajs(nb_initial_pos,
                 current_x = x_i[-1]
                 current_y = y_i[-1]
                 if sim_param.semi_random_trajs:
-                    new_x = current_x + random.uniform(-step_length*2,step_length*2)
-                    new_y = current_y + random.uniform(-step_length*2,step_length*2)
-                else:
                     new_x = current_x + random.choice(step_options)
                     new_y = current_y + random.choice(step_options)
+                else:
+                    new_x = current_x + random.uniform(-step_length,step_length)
+                    new_y = current_y + random.uniform(-step_length,step_length)
+                    
                 x_i.append(new_x)
                 y_i.append(new_y)
                 
                 ## compute new box pos
                 updated_obj_pos = env.compute_obj_pos(
-                                        [current_x,current_y,0],
-                                        [new_x, new_y,0])             
+                                        obj_pos_dict["cube"],
+                                        [current_x,current_y,obj_pos_dict["cube"][2]],
+                                        [new_x, new_y,obj_pos_dict["cube"][2]])
+                updated_obj_pos = updated_obj_pos[1]
+                
                 obj_moved = True \
-                    if updated_obj_pos != sim_param.obj_pos else False
+                    if updated_obj_pos != obj_pos_dict["cube"] else False
                         
                 ## store current delta if there was a move
                 if current_x != new_x or \
@@ -111,9 +129,14 @@ def create_discr_trajs(nb_initial_pos,
                                 effect,
                                 current_x,current_y,0,
                                 new_x, new_y,0,
-                                sim_param.obj_pos[0], sim_param.obj_pos[1],0,
-                                updated_obj_pos[0], updated_obj_pos[1],0,
-                                obj_moved)
+                                [obj_pos_dict["cube"][0], 
+                                 obj_pos_dict["cube"][1],
+                                 obj_pos_dict["cube"][2], ## constant
+                                 updated_obj_pos[0], 
+                                 updated_obj_pos[1],
+                                 obj_pos_dict["cube"][2]]) ## constant
+#                                ,
+#                                obj_moved)
                     current_delta_vector.append(current_delta)
 #                    print(len(current_delta_vector))
                 
@@ -124,7 +147,8 @@ def create_discr_trajs(nb_initial_pos,
                         nb_initial_pos * len(sim_param.effect_values):
                         nb_max_box_touched_found = True
                     ## compute related effect                                            
-                    effect = discr.compute_effect(updated_obj_pos)
+                    effect = discr.compute_effect(obj_pos_dict["cube"],
+                                                  updated_obj_pos)
 #                    print(updated_obj_pos, effect)
                     for d in current_delta_vector:
                         d.set_effect(effect)
@@ -151,8 +175,7 @@ def create_discr_trajs(nb_initial_pos,
 
 
 '''
-Input : nb initial positions of the experiment
-Output : random dataset of trajectories to move the obj
+Generate random trajs prodducing a specific effect
 '''
 def create_effect_trajs(nb_initial_pos,
                        single_pos,

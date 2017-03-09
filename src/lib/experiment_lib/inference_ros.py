@@ -52,8 +52,6 @@ from math import sqrt
 
 import copy
 
-from collections import OrderedDict, Counter
-
 import operator
 
 '''
@@ -175,7 +173,7 @@ class Traj_callback():
 #        if obj_moved :                                                
 #            ''' If object touched, compute result '''
 #            self.obtained_effect = 'left' ######################################## TBD 
-#            obtained_effect = env.identify_effect_3d(initial_obj_pos,
+#            obtained_effect = env.compute_effect(initial_obj_pos,
 #                                                     current_obj_pos)
             
 #            if self.expected_effect == self.obtained_effect:
@@ -339,19 +337,6 @@ def infere_trajectories(current_results_folder,
     ## to infer next move
     ie = agrum.LazyPropagation(bn) 
     
-    ## create initial positions of eef
-    _list_x_axis, _list_y_axis, _list_z_axis = \
-        setup.gen_init_eef(nb_initial_pos)
-
-    if len(_list_x_axis) > 1:
-        init_pos_vector = list(
-            zip(_list_x_axis, 
-                _list_y_axis, 
-                _list_z_axis))
-    else:
-        init_pos_vector = [[_list_x_axis[0],
-                           _list_y_axis[0],
-                           _list_z_axis[0]]]
     ## restart statistics
     nb_success_r = 0
     nb_success_l = 0
@@ -371,7 +356,6 @@ def infere_trajectories(current_results_folder,
     print(' ')    
     
     ''' Restart env '''
-#    if sim_param.exec_traj:
     if sim_param.experiment_type != 'a2l_reproduce_dataset':
         ''' Restart scenario '''         
         success = ros_services.call_restart_world("all")
@@ -384,14 +368,12 @@ def infere_trajectories(current_results_folder,
                 l_eef_init_pos_x = rospy.get_param("/eef_left_init_pos_x")
                 l_eef_init_pos_y = rospy.get_param("/eef_left_init_pos_y")
                 l_eef_init_pos_z = rospy.get_param("/eef_left_init_pos_z")
-#                success = ros_services.call_move_to_initial_position(
-#                            sim_param.untucked_left_eef_pos)
                 success = ros_services.call_move_to_initial_position(
                             [l_eef_init_pos_x,
                             l_eef_init_pos_y,
                             l_eef_init_pos_z]) 
                 if not success:
-                    print("ERROR - restart_world failed")    
+                    print("ERROR - call_move_to_initial_position failed")    
             else:            
                 success = ros_services.call_restart_world("all")
                 if not success:
@@ -407,11 +389,13 @@ def infere_trajectories(current_results_folder,
                 obj_pos[2] = -0.09
             else:
                 obj_pos[2] = -0.08            
-        else:
-            if obj_name == 'cube':
-                obj_pos[2] = round(obj_pos[2] + 0.055,3)
-            else:
-                obj_pos[2] = round(obj_pos[2] + 0.065, 3)
+#        else:
+#            if obj_name == 'cube':
+#                obj_pos[2] = round(obj_pos[2] + 0.055,3)
+#            else:
+#                obj_pos[2] = round(obj_pos[2] + 0.065, 3)
+
+
         obj_pos_dict[obj_name] = obj_pos
         
     ''' Get first obj pos to compute eef initial pos'''
@@ -419,6 +403,22 @@ def infere_trajectories(current_results_folder,
     for name,pos in obj_pos_dict.items():
         print(name, '-->', pos)
     
+    ## create initial positions of eef
+    _list_x_axis, _list_y_axis, _list_z_axis = \
+        setup.gen_init_eef(
+            nb_initial_pos,
+            sim_param.untucked_left_eef_pos[0] - obj_pos_dict[sim_param.obj_name_vector[0]][0],
+            obj_pos_dict[sim_param.obj_name_vector[0]])
+
+    if len(_list_x_axis) > 1:
+        init_pos_vector = list(
+            zip(_list_x_axis, 
+                _list_y_axis, 
+                _list_z_axis))
+    else:
+        init_pos_vector = [[_list_x_axis[0],
+                           _list_y_axis[0],
+                           _list_z_axis[0]]]
 
     ######################################################################################################3
     ## TODO THIS SHOULD BE IN A DIFFERENT FUNCTION
@@ -508,8 +508,13 @@ def infere_trajectories(current_results_folder,
         while nb_effect < len(sim_param.effect_values):          
             desired_effect = sim_param.effect_values[nb_effect]
             
+            print('\n////////////////////////////////////////////////////////////////')
             print('NEW TRAJ for init_pos', init_pos_coord,
                   'effect', desired_effect.upper())            
+                  
+            success = ros_services.call_move_to_initial_position(init_pos_coord) 
+            if not success:
+                print("ERROR - call_move_to_initial_position failed")                   
   
             ## infere traj
             res, eef_traj, obj_traj, \
@@ -642,24 +647,18 @@ def infere_traj(bn, ie,
                                    current_dist)
 
     ''' Plot simulated traj '''
-    below_box = plot_traj_3d(init_pos_vector,
-                             traj,
-                             initial_obj_pos_dict,
-                             init_pos_coord,
-                             expected_effect)                                  
-    print('below_box:', below_box)
-
-    ''' Identify object positions'''
-#    for obj_name in sim_param.obj_name_vector:
-#        print('positions', initial_obj_pos_dict[obj_name], '->', final_obj_pos_dict[obj_name])
-    #        obtained_effect = env.identify_effect(initial_obj_pos,
-#                                              final_obj_pos)                                          
+    if sim_param.plot_trajs:
+        below_box = plot_traj_3d(init_pos_vector,
+                                 traj,
+                                 initial_obj_pos_dict,
+                                 init_pos_coord,
+                                 expected_effect)                                  
+        print('\nbelow_box:', below_box)
+                              
     ''' Identify effect '''
     print('expected_effect: ------------->', expected_effect.upper())
-#        print('obtained_effect: ------------->', obtained_effect.upper())
-
-
-
+    print('obtained_effect: ------------->', obtained_effect.upper())
+    
     execution_active = True ## still trying to touch object
             
 #    if expected_effect == obtained_effect and sim_param.exec_traj:
@@ -675,14 +674,14 @@ def infere_traj(bn, ie,
 ##                nb_executed_deltas,
 #                below_box)
     
-        correct_traj = True    
+        feaseable_traj = True    
     
         ## avoid touching table in REAL ROBOT
         if sim_param.real_robot and below_box:
-            correct_traj = False
+            feaseable_traj = False
             print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
 
-        if correct_traj:
+        if feaseable_traj:
             if sim_param.real_robot:
                 raw_input("PRESS ENTER TO RUN TRAJECTORY.")
             ## execute trajectory
@@ -724,24 +723,24 @@ def infere_traj(bn, ie,
 #        execution_active == tc.sub_up
 
     else: ## only simulate traj
-#        eef_traj_vector = []
-#        obj_traj_vector = []
-#        delta_vector = []
-#        inf_dicr = []
-#        delta_class_vector = []
-#        if expected_effect in obtained_effect:
-#            traj_res = 'success'
-#        elif obj_moved:
-#            traj_res = 'false_pos'
-#        else:
-#            traj_res = 'fail'           
+        eef_traj_vector = []
+        obj_traj_vector = []
+        delta_vector = []
+        inf_dicr = []
+        delta_class_vector = []
+        if expected_effect in obtained_effect:
+            traj_res = 'success'
+        elif obj_moved:
+            traj_res = 'false_pos'
+        else:
+            traj_res = 'fail'           
         execution_active == False
                  
-    traj_res = 'fail'
-    eef_traj_vector = []
-    obj_traj_vector = []
-    inf_dicr = []
-    delta_class_vector = []
+#    traj_res = 'fail'
+#    eef_traj_vector = []
+#    obj_traj_vector = []
+#    inf_dicr = []
+#    delta_class_vector = []
 
     return traj_res, \
             eef_traj_vector, obj_traj_vector, \
@@ -812,20 +811,16 @@ def simulate_traj(bn, ie,
                                node_names,
                                node_values)
                 print(node_values, next_mov_discr, prob_value)
+                print('Next move :', next_mov_discr.upper(),
+                      'for', node_values,
+                      'with prob value', prob_value)
+                if same_prob:
+                    print('-------------------------------> UNKNOWN PROBABILITY')
+                next_mov_discr = [next_mov_discr] ## to computemove later
             except Exception as e: 
                 if sim_param.debug_infer:
                     print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!!', e)
-                    print([0, ## virtual position not relevant
-                           node_values])
-                virt_inference_vector.append([0, ## virtual position not relevant
-                                             '',
-                                             '', 
-                                             0]) ## to avoid being selected
-                                             
-            virt_inference_vector.append([0, ## virtual position not relevant 
-                                         node_values,
-                                         next_mov_discr, 
-                                         prob_value])                                               
+                return eef_traj, False, obj_pos_dict[obj_name]
 
         else:
             ## compute neighbours virtual positions
@@ -896,6 +891,7 @@ def simulate_traj(bn, ie,
                                    node_names,
                                    node_values)
                     print(node_values, next_mov_discr, prob_value)
+                    
                 except Exception as e: 
                     if sim_param.debug_infer:
                         print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!!', e)
@@ -905,7 +901,7 @@ def simulate_traj(bn, ie,
                                                  '',
                                                  '', 
                                                  0]) ## to avoid being selected
-                    continue
+                    continue ## dont do next steps
             
             if sim_param.debug_infer:
                 print([curr_virt_pos, 
@@ -930,76 +926,76 @@ def simulate_traj(bn, ie,
     
             print(node_values)
                 
-#        ## MOVE 
-#        ## with higher prob    
-#        max_prob = virt_inference_vector[0][3]
-#        max_next_move = virt_inference_vector[0][2]
-#        max_pos = 0
-#        tmp_i = 1
-#        for tmp_infer_values in virt_inference_vector[1:]:
-#            if tmp_infer_values[3] > max_prob:
-#                max_prob = tmp_infer_values[3]
-#                max_next_move = tmp_infer_values[2]
-#                max_pos = tmp_i
-#            tmp_i += 1
-#        print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', max_pos)
-#        next_mov_discr = [max_next_move]                
-                
-            
-        ## get 2 higher values
-        ## if close, we select the one more repeated
-        ## else, the higher value
-        cumulated_prob_dict = OrderedDict()
-        for tmp_infer_values in virt_inference_vector:
-            if not tmp_infer_values[2] in cumulated_prob_dict.keys():
-                cumulated_prob_dict[tmp_infer_values[2]] = 0 ## cumulated prob
-            cumulated_prob_dict[tmp_infer_values[2]] += tmp_infer_values[3]
-                
-#        counter_dict = Counter(cumulated_prob_dict) ## { key1:n times, key2:p times etc }
-        
-        keys_found_list = []
-        for curr_res in virt_inference_vector:
-            keys_found_list.append(curr_res[2])
-            
-        counter_dict = OrderedDict()
-        for key in keys_found_list:
-            if key == '':
-                continue
-            
-            if not key in counter_dict:
-                counter_dict[key] = 1
-            else:
-                counter_dict[key] += 1
-    
-        mean_prob_dict = OrderedDict()
-        for move,repetitions in counter_dict.items():
-            print(move,repetitions)
-            mean_prob_dict[move] = round(cumulated_prob_dict[move]/repetitions, 
-                                         sim_param.round_value) ## mean value
 
-        sorted_mean_list = sorted(mean_prob_dict.items(), key=operator.itemgetter(1), reverse=True)
-        print(sorted_mean_list)
-        max_next_move = ''
-        if len(sorted_mean_list) == 1 or sorted_mean_list[0][1] > 0.95:
-            max_next_move = sorted_mean_list[0][0]
-            max_prob = sorted_mean_list[0][1]
-        ## if 2 elems check if are close
-        elif len(sorted_mean_list) > 1:
-            ## if are close, get the more repeated one
-            if round(sorted_mean_list[1][1] / sorted_mean_list[0][1],2) >= 0.75:
-                if counter_dict[sorted_mean_list[0][0]] >= \
-                   counter_dict[sorted_mean_list[1][0]]:
-                    max_next_move = sorted_mean_list[0][0]
-                    max_prob = sorted_mean_list[0][1]
+#            ## MOVE 
+#            ## with higher prob    
+#            max_prob = virt_inference_vector[0][3]
+#            max_next_move = virt_inference_vector[0][2]
+#            max_pos = 0
+#            tmp_i = 1
+#            for tmp_infer_values in virt_inference_vector[1:]:
+#                if tmp_infer_values[3] > max_prob:
+#                    max_prob = tmp_infer_values[3]
+#                    max_next_move = tmp_infer_values[2]
+#                    max_pos = tmp_i
+#                tmp_i += 1
+#            print('Next move for pos', max_next_move.upper(), max_prob, 'in pose', max_pos)
+#            next_mov_discr = [max_next_move]
+                    
+            ## get 2 higher values
+            ## if close, we select the one more repeated
+            ## else, the higher value
+            cumulated_prob_dict = OrderedDict()
+            for tmp_infer_values in virt_inference_vector:
+                if not tmp_infer_values[2] in cumulated_prob_dict.keys():
+                    cumulated_prob_dict[tmp_infer_values[2]] = 0 ## cumulated prob
+                cumulated_prob_dict[tmp_infer_values[2]] += tmp_infer_values[3]
+                    
+    #        counter_dict = Counter(cumulated_prob_dict) ## { key1:n times, key2:p times etc }
+            
+            keys_found_list = []
+            for curr_res in virt_inference_vector:
+                keys_found_list.append(curr_res[2])
+                
+            counter_dict = OrderedDict()
+            for key in keys_found_list:
+                if key == '':
+                    continue
+                
+                if not key in counter_dict:
+                    counter_dict[key] = 1
                 else:
-                    max_next_move = sorted_mean_list[1][0]
-                    max_prob = sorted_mean_list[1][1]
-            else:
+                    counter_dict[key] += 1
+        
+            mean_prob_dict = OrderedDict()
+            for move,repetitions in counter_dict.items():
+                print(move,repetitions)
+                mean_prob_dict[move] = round(cumulated_prob_dict[move]/repetitions, 
+                                             sim_param.round_value) ## mean value
+    
+            sorted_mean_list = sorted(mean_prob_dict.items(), key=operator.itemgetter(1), reverse=True)
+            print(sorted_mean_list)
+            max_next_move = ''
+            if len(sorted_mean_list) == 1 or sorted_mean_list[0][1] > 0.95:
                 max_next_move = sorted_mean_list[0][0]
                 max_prob = sorted_mean_list[0][1]
-        
-        print('Next move for pos', max_next_move.upper(), 'with mean prob', max_prob)
-        next_mov_discr = [max_next_move]
+            ## if 2 elems check if are close
+            elif len(sorted_mean_list) > 1:
+                ## if are close, get the more repeated one
+                if round(sorted_mean_list[1][1] / sorted_mean_list[0][1],2) >= 0.75:
+                    if counter_dict[sorted_mean_list[0][0]] >= \
+                       counter_dict[sorted_mean_list[1][0]]:
+                        max_next_move = sorted_mean_list[0][0]
+                        max_prob = sorted_mean_list[0][1]
+                    else:
+                        max_next_move = sorted_mean_list[1][0]
+                        max_prob = sorted_mean_list[1][1]
+                else:
+                    max_next_move = sorted_mean_list[0][0]
+                    max_prob = sorted_mean_list[0][1]
+            
+            print('Next move for pos', max_next_move.upper(), 'with mean prob', max_prob)
+            next_mov_discr = [max_next_move]
 
 #        if sim_param.debug_infer:
 #            print(expected_effect.upper(),
@@ -1035,17 +1031,17 @@ def simulate_traj(bn, ie,
             if dims_vector == 0: ## to avoid div by 0 ??? TODOOOOOOOOOOOOOOOOOOOOOOO
                 dims_vector = 1
             mov_step = round(sim_param.step_length/sqrt(dims_vector), sim_param.round_value)
-            if delta_x > 0: #== 1 :
+            if delta_x > 0:
                 delta_x = mov_step
-            elif delta_x < 0: #== 1 : == -1:
+            elif delta_x < 0:
                 delta_x = -mov_step
-            if delta_y > 0: #== 1 : == 1 :
+            if delta_y > 0: 
                 delta_y = mov_step
-            elif delta_y < 0: #== 1 : == -1:
+            elif delta_y < 0: 
                 delta_y = -mov_step
-            if delta_z > 0: #== 1 : == 1 :
+            if delta_z > 0: 
                 delta_z = mov_step
-            elif delta_z < 0: #== 1 : == -1:
+            elif delta_z < 0:
                 delta_z = -mov_step            
                 
         print("Delta :", delta_x, delta_y, delta_z, 
@@ -1084,7 +1080,7 @@ def simulate_traj(bn, ie,
 
         tmp_all_obj_moved = True
         for name, moved in obj_moved_pose_dict.items():
-            print(name, "moved ? :", moved[0])
+            print(name.upper(), "MOVED ? :", moved[0])
             tmp_all_obj_moved = tmp_all_obj_moved and moved[0]
         all_obj_moved = tmp_all_obj_moved
 #        prev_mov_delta = [delta_x,
@@ -1123,8 +1119,8 @@ def plot_traj_3d(init_pos_vector,
     obj_pos = obj_pos_dict['cube']
     ax.bar3d(obj_pos[0] - 0.085/2, 
              obj_pos[1] - 0.07/2, 
-             obj_pos[2] - 0.08, 
-             [.085], [.07], [.08], 
+             obj_pos[2] - 0.08/2, 
+             [sim_param.cube_y], [sim_param.cube_x], [sim_param.cube_z], 
              color='green',
              alpha=0.2,
              edgecolor='none')             
@@ -1197,9 +1193,9 @@ def plot_traj_3d(init_pos_vector,
     
     ## view
     ## All commented = diagonal view
-#    ax.view_init(90,180) # top view
+    ax.view_init(90,180) # top view
 #    ax.view_init(0,0) # front view
-    ax.view_init(0,270) # left view
+#    ax.view_init(0,270) # left view
 
     # plot initial position
     list_x_axis = [pos[0] for pos in init_pos_vector]

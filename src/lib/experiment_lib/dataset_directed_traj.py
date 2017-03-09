@@ -492,7 +492,7 @@ def write_dataset(traj_vector):
         for value in traj:
             file.write(str(value))
             file.write(',')
-        file.write('\n')     
+        file.write('\n')
 
 ''' 
 Read the trajs dataset 
