@@ -146,6 +146,21 @@ if __name__ == "__main__":
     ''' Update number of initial positions in ROS '''
     ros_services.update_nb_init_pos()
     
+    ''' Restart scenario if box is not in init position '''
+    obj_pos_dict = OrderedDict()
+    for obj_name in sim_param.obj_name_vector:
+        obj_pos = ros_services.call_get_model_state(obj_name)
+        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
+        obj_pos_dict[obj_name] = obj_pos 
+        
+        cube_pos = obj_pos_dict['cube']
+        if cube_pos[0] != sim_param.first_obj_pos[0] or \
+                          sim_param.first_obj_pos[1] or \
+                          sim_param.first_obj_pos[2]:
+            success = ros_services.call_restart_world("all")
+            if not success:
+                print("ERROR - restart_world failed")    
+    
     ''' Select obj position during inference ''' 
     model_state = ros_services.call_get_model_state(sim_param.obj_name_vector[0])
     initial_obj_pos = model_state[0:3]

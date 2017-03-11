@@ -166,36 +166,60 @@ def compute_obj_pos(box_pos,
             wp_next = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
         else:
             wp_origin = Point(wp_mid_point_x, wp_mid_point_y, wp_mid_point_z)
-            wp_next = Point(_wp_next[0], _wp_next[1], _wp_next[2])              
+            wp_next = Point(_wp_next[0], _wp_next[1], _wp_next[2])  
 
-        if wp_next.x <= l_bottom_front_right.x and \
-            wp_next.y >= l_bottom_front_right.y and \
-            wp_next.z >= l_bottom_front_right.z and \
-            wp_next.x <= l_bottom_front_left.x and \
-            wp_next.y <= l_bottom_front_left.y and \
-            wp_next.z >= l_bottom_front_left.z and \
-            wp_next.x >= l_bottom_back_right.x and \
-            wp_next.y >= l_bottom_back_right.y and \
-            wp_next.z >= l_bottom_back_right.z and \
-            wp_next.x >= l_bottom_back_left.x and \
-            wp_next.y <= l_bottom_back_left.y and \
-            wp_next.z >= l_bottom_back_left.z and \
-            wp_next.x <= l_top_front_right.x and \
-            wp_next.y >= l_top_front_right.y and \
-            wp_next.z <= l_top_front_right.z and \
-            wp_next.x <= l_top_front_left.x and \
-            wp_next.y <= l_top_front_left.y and \
-            wp_next.z <= l_top_front_left.z and \
-            wp_next.x >= l_top_back_right.x and \
-            wp_next.y >= l_top_back_right.y and \
-            wp_next.z <= l_top_back_right.z and \
-            wp_next.x >= l_top_back_left.x and \
-            wp_next.y <= l_top_back_left.y and \
-            wp_next.z <= l_top_back_left.z:
+#    nb_points = 8
+#    delta_x = (_wp[0] - _wp_next[0]) / nb_points
+#    delta_y = (_wp[1] - _wp_next[1]) / nb_points
+#    delta_z = (_wp[2] - _wp_next[2]) / nb_points    
+#    i = 0
+#    while i < nb_points-1 and not obj_moved:                        
+#        wp_origin = Point(_wp[0] + i*delta_x, 
+#                          _wp[1] + i*delta_y, 
+#                          _wp[2] + i*delta_z)
+#        wp_next = Point(_wp[0] + (i+1)*delta_x, 
+#                        _wp[1] + (i+1)*delta_y, 
+#                        _wp[2] + (i+1)*delta_z)
+
+        eef_width = 0.01
+
+        if wp_next.x <= l_bottom_front_right.x + eef_width and \
+            wp_next.y >= l_bottom_front_right.y - eef_width and \
+            wp_next.z >= l_bottom_front_right.z - eef_width and \
+            \
+            wp_next.x >= l_bottom_back_right.x - eef_width and \
+            wp_next.y >= l_bottom_back_right.y - eef_width and \
+            wp_next.z >= l_bottom_back_right.z - eef_width and \
+            \
+            wp_next.x <= l_bottom_front_left.x + eef_width and \
+            wp_next.y <= l_bottom_front_left.y + eef_width and \
+            wp_next.z >= l_bottom_front_left.z - eef_width and \
+            \
+            wp_next.x >= l_bottom_back_left.x - eef_width and \
+            wp_next.y <= l_bottom_back_left.y + eef_width and \
+            wp_next.z >= l_bottom_back_left.z - eef_width and \
+            \
+            wp_next.x <= l_top_front_right.x + eef_width and \
+            wp_next.y >= l_top_front_right.y - eef_width and \
+            wp_next.z <= l_top_front_right.z + eef_width and \
+            \
+            wp_next.x >= l_top_back_right.x - eef_width and \
+            wp_next.y >= l_top_back_right.y - eef_width and \
+            wp_next.z <= l_top_back_right.z + eef_width and \
+            \
+            wp_next.x <= l_top_front_left.x + eef_width and \
+            wp_next.y <= l_top_front_left.y + eef_width and \
+            wp_next.z <= l_top_front_left.z + eef_width and \
+            \
+            wp_next.x >= l_top_back_left.x - eef_width and \
+            wp_next.y <= l_top_back_left.y + eef_width and \
+            wp_next.z <= l_top_back_left.z + eef_width :
                 obj_moved = True
         i += 1
 
         if obj_moved:
+            
+#            print(i, wp_next.x, wp_next.y, wp_next.z)
             
             ## touch top
             z_max_value_box = box_pos[2] + sim_param.cube_z/2          

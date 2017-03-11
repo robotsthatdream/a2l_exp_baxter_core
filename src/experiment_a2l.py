@@ -204,10 +204,10 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
     print('----------------------------------------------------------')
     print('Extending', current_dataset_name.upper(), 'dataset')
     print('ITERATION', current_iteration)    
-    print('----------------------------------------------------------')
     print('----------------------------------------------------------\n\n')   
     
     ## For each successful trajectory generate new ones
+    print("----->Extending trajectory".upper())
     new_raw_delta_vector, effect_directed_extension_vector = \
         dataset.extend_dataset(
             current_dataset_stats,
@@ -239,11 +239,12 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
     ## store discretized dataset
     discr_dataset_filename = sim_param.generated_files_folder + \
                 'random_discr_wps_iteration_' + str(current_iteration) + '.csv'
-    discr.save_discr_deltas(discr_dataset_filename, discr_delta_vector)                
+    discr.save_discr_deltas(discr_dataset_filename, 
+                            discr_delta_vector)                
     
     inferred_discr_delta_vector = []
     for current_algo in learn_algo_vector:            
-        print('\n\n----------------------------------------------------------')
+        print('\n----------------------------------------------------------')
         print('----------------------------------------------------------')
         print('Learning BN in the EXTENDED', current_dataset_name.upper(), 'dataset',
               'with', current_algo.upper(),  'algorithm')
@@ -255,6 +256,12 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         bn_url = 'BN_' + current_dataset_name + '_' + current_algo + '.bif'                
         ln.save_bn(bn, 
                    sim_param.generated_files_folder + bn_url)                           
+
+        print('\n----------------------------------------------------------')
+        print('----------------------------------------------------------')
+        print('Validating BN ')
+        print('----------------------------------------------------------')
+        print('----------------------------------------------------------\n\n')  
      
         ''' Evaluation '''
         dataset_size_class = \
@@ -265,8 +272,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                 bn, 
                 current_algo,
                 dataset_size_class,
-                current_dataset_name,
-#                current_obj_pos,            
+                current_dataset_name,          
                 current_nb_initial_pos,
                 current_iteration,
                 current_orien_discr,

@@ -157,7 +157,8 @@ def discretize_trajs(delta_vector,
 '''
 Save the discretized deltas composing the trajectories
 '''
-def save_discr_deltas(dataset_filename, discr_delta_vector):
+def save_discr_deltas(dataset_filename, 
+                      discr_delta_vector):
     ''' Write the trajs discretized dataset '''
     file = open(dataset_filename, 'w')    
     file.write('effect')
@@ -179,7 +180,7 @@ def save_discr_deltas(dataset_filename, discr_delta_vector):
     for discr_delta in discr_delta_vector:
         for nb_value in range(len(discr_delta)):
             file.write(discr_delta[nb_value])
-            if nb_value != (len(discr_delta)-1):
+            if nb_value != (len(discr_delta)-1):                
                 file.write(',')
         file.write('\n')                   
         traj_pos += 1

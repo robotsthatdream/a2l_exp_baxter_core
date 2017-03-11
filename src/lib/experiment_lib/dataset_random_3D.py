@@ -248,12 +248,12 @@ def create_discr_trajs(nb_initial_pos,
                     nb_box_touched += 1
                     print('nb_box_touched', nb_box_touched)
                     if nb_box_touched == \
-                        nb_initial_pos * len(sim_param.effect_values) * 2:
+                        nb_initial_pos * len(sim_param.effect_values) * 3:
                         nb_max_box_touched_found = True
                     ## compute related effect                                            
                     effect = discr.compute_effect(obj_pos_dict["cube"],
                                                   updated_obj_pos)
-                    print(updated_obj_pos, effect)
+#                    print(updated_obj_pos, effect)
                     for d in current_delta_vector:
                         d.set_effect(effect)
                     

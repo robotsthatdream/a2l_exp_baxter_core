@@ -35,6 +35,7 @@ else:
     import discretize_orientation_sections as discr_orien
     import discretize_inclination_sections as discr_inclin
     import discretize_distance_sections as discr_dist
+    import discretize_effect as discr_effect
     
 #import roslib
 #roslib.load_manifest('std_msgs')
@@ -59,133 +60,158 @@ callback class
 '''
 class Traj_callback():
     def __init__(self, 
-                 simulated_traj, 
+                 simulated_traj,
+                 sim_obj_moved,
 #                 simulated_obj_pos,
-#                 current_orien, current_inclin, current_dist,
+                 current_orien, current_inclin, current_dist,
 #                 eef_traj_vector, obj_traj_vector, delta_vector, inf_dicr,
 #                 delta_class_vector, traj_res,
-#                 expected_effect, obtained_effect,
+#                 expected_effect, 
+#                 obtained_effect,
 #                 nb_executed_deltas,
                  below_box):
 #        self.simulated_obj_pos = simulated_obj_pos
-#        self.current_orien = current_orien
-#        self.current_inclin = current_inclin
-#        self.current_dist = current_dist
-#                     
-#        self.eef_traj_vector = eef_traj_vector ## [[eef_x, eef_y, eef_z]]
-#        self.obj_traj_vector = obj_traj_vector ## [[obj_x, obj_y, obj_z]]
-#        self.delta_vector = delta_vector ## [[orientation, inclionation, distance, next_mov_discr]]
-#        self.traj_inferred_discr_delta_vector = inf_dicr ## [[effect, idem]]
-#        self.delta_class_vector = delta_class_vector
+        self.current_orien = current_orien
+        self.current_inclin = current_inclin
+        self.current_dist = current_dist
+                     
+        self.eef_traj_vector = [] # eef_traj_vector ## [[eef_x, eef_y, eef_z]]
+        self.obj_traj_vector = [] #obj_traj_vector ## [[obj_x, obj_y, obj_z]]
+        self.delta_vector = [] # delta_vector ## [[orientation, inclionation, distance, next_mov_discr]]
+        self.traj_inferred_discr_delta_vector = [] # inf_dicr ## [[effect, idem]]
+        self.delta_class_vector = [] #delta_class_vector
 #        self.traj_res = traj_res ##True or False
 #        self.expected_effect = expected_effect
-#        self.obtained_effect = obtained_effect
+        self.obtained_effect = "" #obtained_effect
         self.nb_executed_deltas = 0
         self.traj_res = False
-        
-        ## subscribe to feedback topic
-        rospy.init_node('listener', anonymous=True)
-        self.sub = rospy.Subscriber(sim_param.feedback_topic, 
-                                   Float64MultiArray, 
-                                   self.execute_traj_callback,
-                                   queue_size=1)
-        self.sub_up = True        
-        
-        
-        ## execute trajectory
-#        simulated_traj_vector = [i for el in simulated_traj for i in el] # [float]
-#        ros_services.call_trajectory_motion(sim_param.feedback_window, 
-#                                            simulated_traj_vector)
-#        print("FINISHED EXECUTION IN ROS !! ")
-        ## avoid touching table in REAL ROBOT
-        if not sim_param.real_robot or (sim_param.real_robot and not below_box):    
-            ## execute trajectory
-            simulated_traj_vector = [i for el in simulated_traj for i in el] ## [float]
-            res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-                                                           simulated_traj_vector)
-#            rospy.spin()
-            if not res_exec:
-                print("FAILED EXECUTION IN ROS !! ")
+
+        if sim_obj_moved:        
+            ## subscribe to feedback topic
+#            rospy.init_node('listener', anonymous=True)
+            self.sub = rospy.Subscriber(sim_param.feedback_topic, 
+                                       Float64MultiArray, 
+                                       self.execute_traj_callback,
+                                       queue_size=1)
+#            self.sub_up = True        
+                    
+            ## avoid touching table in REAL ROBOT
+            if not sim_param.real_robot or (sim_param.real_robot and not below_box):
+                ## execute trajectory
+                simulated_traj_vector = [i for el in simulated_traj for i in el] ## [float]
+                res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
+                                                               simulated_traj_vector)
+#                rospy.spin()
+                if res_exec:
+                    print("FINISHED EXECUTION IN ROS !! ")
+                else:
+                    print("FAILED EXECUTION IN ROS !! ")
             else:
-                print("FINISHED EXECUTION IN ROS !! ")       
-        else:
-            print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")         
+                print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")         
+            
+            self.sub.unregister()
 
     def execute_traj_callback(self, feedback_data):
         print("\ntraj_callback ---> execute_traj_callback function", feedback_data.data)
-        print('traj_callback ---> feedback_data size', len(feedback_data.data))
+#        print('traj_callback ---> feedback_data size', len(feedback_data.data))
         
-        ''' Return if trajectory stopped '''
-        stop_bool = rospy.get_param("/stop_traj")
-        print("traj_callback ---> stop_bool", stop_bool)
-        if stop_bool:
-            print("traj_callback ---> traj stopped !!!")
-            return
+#        ''' Return if trajectory stopped '''
+#        stop_bool = rospy.get_param("/stop_traj")
+#        print("traj_callback ---> stop_bool", stop_bool)
+#        if stop_bool:
+#            print("traj_callback ---> traj stopped !!!")
+#            return
         
         ''' Read feedback '''
         self.nb_executed_deltas = len(feedback_data.data)/6
         pos = 0
         batch_size = 6 * sim_param.feedback_window
+        feedback_wp_vector = [] 
+        feedback_obj_vector = []
         for pos in range(0, len(feedback_data.data), batch_size):
-            feedback_wp_vector = [] 
-            feedback_obj_vector = []
-            nb_wp = sim_param.feedback_window
-            for i in range(nb_wp):
-                eef_pos_x = feedback_data.data[6*i+0]
-                eef_pos_y = feedback_data.data[6*i+1]
-                eef_pos_z = feedback_data.data[6*i+2]
-                feedback_wp_vector.append([eef_pos_x,
-                                           eef_pos_y,
-                                           eef_pos_z])
+            eef_pos_x = feedback_data.data[pos+0]
+            eef_pos_y = feedback_data.data[pos+1]
+            eef_pos_z = feedback_data.data[pos+2]
+            feedback_wp_vector.append([eef_pos_x,
+                                       eef_pos_y,
+                                       eef_pos_z])
 #                self.eef_traj_vector = \
-#                    self.eef_traj_vector + feedback_wp_vector                
-                
-                obj_pos_x = feedback_data.data[6*i+3]
-                obj_pos_y = feedback_data.data[6*i+4]
-                obj_pos_z = feedback_data.data[6*i+5]                
-                feedback_obj_vector.append([obj_pos_x,
-                                            obj_pos_y,
-                                            obj_pos_z])                
+#                    self.eef_traj_vector + feedback_wp_vector
+            
+            obj_pos_x = feedback_data.data[pos+3]
+            obj_pos_y = feedback_data.data[pos+4]
+            obj_pos_z = feedback_data.data[pos+5]                
+            feedback_obj_vector.append([obj_pos_x,
+                                        obj_pos_y,
+                                        obj_pos_z])                
 #                self.obj_traj_vector = \
 #                    self.obj_traj_vector + feedback_obj_vector
-                    
-                print("traj_callback ---> current eef pos", self.eef_traj_vector[-1])
-                print("traj_callback ---> obj_traj_vector", self.obj_traj_vector[-1])
+        self.eef_traj_vector = feedback_wp_vector
+        self.obj_traj_vector = feedback_obj_vector
+        
+#        print("traj_callback ---> final eef pos", self.eef_traj_vector[-1])
+#        print("traj_callback ---> final obj pos", self.obj_traj_vector[-1])
                 
 #        ''' Check if object moved'''
-#        obj_moved = False
-#        thrs = sim_param.obj_moved_threshold
-#        initial_obj_pos = self.simulated_obj_pos
-##        print("\ninitial_obj_pos", initial_obj_pos)
+        real_obj_moved = False
+        thrs = sim_param.obj_moved_threshold
+        initial_obj_pos = self.obj_traj_vector[0]
+        final_obj_pos = self.obj_traj_vector[-1]
+        
 #        for obj_pos in feedback_obj_vector:
-#            obj_moved = \
+#            real_obj_moved = \
 #                (abs(initial_obj_pos[0] - obj_pos[0]) > thrs) or \
 #                (abs(initial_obj_pos[1] - obj_pos[1]) > thrs) or \
 #                (abs(initial_obj_pos[2] - obj_pos[2]) > thrs)
 #            if obj_moved:
-#                break
+#                break        
+        real_obj_moved = \
+            (abs(initial_obj_pos[0] - final_obj_pos[0]) +
+             abs(initial_obj_pos[1] - final_obj_pos[1]) +
+             abs(initial_obj_pos[2] - final_obj_pos[2])) >= thrs        
         
-#        ''' Store delta info '''
-#        self.compute_traj_info(feedback_wp_vector, 
-#                               feedback_obj_vector,
-#                               obj_moved)
-            
-#        if obj_moved :                                                
+        print('real_obj_moved', real_obj_moved)
+        print("obj_pos", initial_obj_pos, final_obj_pos)
+        if real_obj_moved :
+            ''' If object touched, compute result '''                                    
+            self.obtained_effect = discr_effect.compute_effect(initial_obj_pos,
+                                                               final_obj_pos)                    
+            ''' Store delta info '''
+            self.compute_traj_info(feedback_wp_vector, 
+                                   feedback_obj_vector,
+                                   real_obj_moved)
+
+            for tmp_delta in self.delta_vector: #[orientation, inclination, distance, move]
+                ## in discr dataset file : 
+                ## effect,orientation,inclination,move,distance
+                self.traj_inferred_discr_delta_vector.append(
+                    [self.obtained_effect,  ## effect
+                     tmp_delta[0],  ## orientation
+                     tmp_delta[1],  ## inclination
+                     tmp_delta[3],  ## move
+                     tmp_delta[2]]) ## distance
+        else:
+            print('------------> BOX MOVE', 
+                  abs(initial_obj_pos[0] - final_obj_pos[0]) +
+                  abs(initial_obj_pos[1] - final_obj_pos[1]) +
+                  abs(initial_obj_pos[2] - final_obj_pos[2]))
+        
+#        print('real_obj_moved', real_obj_moved)
+#        if real_obj_moved :                                                
 #            ''' If object touched, compute result '''
-#            self.obtained_effect = 'left' ######################################## TBD 
-#            obtained_effect = env.compute_effect(initial_obj_pos,
-#                                                     current_obj_pos)
-            
-#            if self.expected_effect == self.obtained_effect:
-#                self.res = 'success'
-#            else:
-#                self.res = 'false_pos'
-                    
+#            self.obtained_effect = discr_effect.compute_effect(initial_obj_pos,
+#                                                               obj_pos)
+#            
+##            if self.expected_effect == self.obtained_effect:
+##                self.res = 'success'
+##            else:
+##                self.res = 'false_pos'
+#                    
 #            for tmp_delta in self.delta_vector: #[orientation, inclination, distance, move]
 #                ## in discr dataset file : 
 #                ## effect,orientation,inclination,move,distance
 #                self.traj_inferred_discr_delta_vector.append(
-#                    ['', #self.obtained_effect,  ## effect
+#                    [self.obtained_effect,  ## effect
 #                     tmp_delta[0],  ## orientation
 #                     tmp_delta[1],  ## inclination
 #                     tmp_delta[3],  ## move
@@ -212,106 +238,105 @@ class Traj_callback():
 ##        print("nb executed deltas", self.nb_executed_deltas)
        
 
-        ''' Check if object moved''' 
-        if self.nb_executed_deltas == 1: #not possible in one mov
-            obj_moved = False
-        else:
-            previous_eef = self.eef_traj_vector[-2]
-            current_eef = self.eef_traj_vector[-1]
-            obj_pos = self.obj_traj_vector[-1]
-                  
-            obj_moved, obj_moved_pose = \
-                env.compute_obj_pos(
-                    obj_pos,
-                    [previous_eef[0],previous_eef[1],previous_eef[2]], 
-                    [current_eef[0],current_eef[1],current_eef[2]])
-            print("traj_callback ---> obj_moved:", obj_moved)
-            
-            if obj_moved:                      
-                ''' If obj_moved was due to the robot '''
-                if self.nb_executed_deltas == len(simulate_traj):
-                    self.traj_res = True
-                    print("traj_callback ---> The robot touched the box !!!!!!")                
-                    self.sub.unregister() # close subscriber
-                    self.sub_up = False            
-                
-                else:
-                    ''' If not, moved due to external change, and then stop traj
-                    to recalculate it '''                
-                    rospy.set_param("/stop_traj", "true") # stop execution
-                    print("traj_callback ---> object externally moved")
-            
-            else: ## not moved
-                if self.nb_executed_deltas > sim_param.max_nb_executed_deltas:
-                    self.traj_res = False
-                    print("traj_callback ---> Trajectory does not interact with object !!!!!!")                
-                    self.sub.unregister() # close subscriber
-                    self.sub_up = False                  
+#        ''' Check if object moved''' 
+#        if self.nb_executed_deltas == 1: #not possible in one mov
+#            obj_moved = False
+#        else:
+#            previous_eef = self.eef_traj_vector[-2]
+#            current_eef = self.eef_traj_vector[-1]
+#            obj_pos = self.obj_traj_vector[-1]
+#                  
+#            obj_moved, obj_moved_pose = \
+#                env.compute_obj_pos(
+#                    obj_pos,
+#                    [previous_eef[0],previous_eef[1],previous_eef[2]], 
+#                    [current_eef[0],current_eef[1],current_eef[2]])
+#            print("traj_callback ---> obj_moved:", obj_moved)
+#            
+#            if obj_moved:                      
+#                ''' If obj_moved was due to the robot '''
+#                if self.nb_executed_deltas == len(simulate_traj):
+#                    self.traj_res = True
+#                    print("traj_callback ---> The robot touched the box !!!!!!")                
+#                    self.sub.unregister() # close subscriber
+#                    self.sub_up = False            
+#                
+#                else:
+#                    ''' If not, moved due to external change, and then stop traj
+#                    to recalculate it '''                
+#                    rospy.set_param("/stop_traj", "true") # stop execution
+#                    print("traj_callback ---> object externally moved")
+#            
+#            else: ## not moved
+#                if self.nb_executed_deltas > sim_param.max_nb_executed_deltas:
+#                    self.traj_res = False
+#                    print("traj_callback ---> Trajectory does not interact with object !!!!!!")                
+#                    self.sub.unregister() # close subscriber
+#                    self.sub_up = False                  
 
                 
-#    '''
-#    a
-#    '''
-#    def compute_traj_info(self, 
-#                          feedback_wp_vector, 
-#                          feedback_obj_vector,
-#                          obj_moved):
-#        print("executing compute_traj_info function")  
-#        for pos in range(len(feedback_wp_vector)-1):
-#            ## store delta also as delta class              
-#            current_delta_class = delta.Delta(
-#                        self.expected_effect,
-#                        feedback_wp_vector[pos][0],
-#                        feedback_wp_vector[pos][1],
-#                        feedback_wp_vector[pos][2],
-#                        feedback_wp_vector[pos+1][0],
-#                        feedback_wp_vector[pos+1][1],
-#                        feedback_wp_vector[pos+1][2],
-#                        feedback_obj_vector[pos][0],
-#                        feedback_obj_vector[pos][1],
-#                        feedback_obj_vector[pos][2],
-#                        feedback_obj_vector[pos+1][0],
-#                        feedback_obj_vector[pos+1][1],
-#                        feedback_obj_vector[pos+1][2],
-#                        obj_moved)
-#            self.delta_class_vector.append(current_delta_class)
-#            
-#            ## compute and store discretized values
-#            move = discr_move.compute_move_discr(
-#                        [feedback_wp_vector[pos][0],
-#                        feedback_wp_vector[pos][1],
-#                        feedback_wp_vector[pos][2]],
-#                        [feedback_wp_vector[pos+1][0],
-#                        feedback_wp_vector[pos+1][1],
-#                        feedback_wp_vector[pos+1][2]])
-#    
-#            orientation = discr_orien.compute_orientation_discr(
-#                        [feedback_wp_vector[pos][0],
-#                        feedback_wp_vector[pos][1]],
-#                        [feedback_wp_vector[pos+1][0],
-#                        feedback_wp_vector[pos+1][1]],
-#                        self.current_orien)
-#                             
-#            inclination = discr_inclin.compute_inclination_discr(
-#                        [feedback_wp_vector[pos][0],
-#                        feedback_wp_vector[pos][1],
-#                        feedback_wp_vector[pos][2]],
-#                        [feedback_wp_vector[pos+1][0],
-#                        feedback_wp_vector[pos+1][1],
-#                        feedback_wp_vector[pos+1][2]],
-#                        self.current_inclin)
-#
-#            distance = discr_dist.compute_distance(
-#                        [feedback_wp_vector[pos][0],
-#                        feedback_wp_vector[pos][1],
-#                        feedback_wp_vector[pos][2]],
-#                        [feedback_wp_vector[pos+1][0],
-#                        feedback_wp_vector[pos+1][1],
-#                        feedback_wp_vector[pos+1][2]],
-#                        self.current_dist)            
-#            
-#            self.delta_vector.append([orientation, inclination, distance, move])  
-##            print("delta_discr", [orientation, inclination, distance, move])
+    '''
+    a
+    '''
+    def compute_traj_info(self, 
+                          feedback_wp_vector, 
+                          feedback_obj_vector,
+                          real_obj_moved):
+        print("executing compute_traj_info function")  
+        for pos in range(len(feedback_wp_vector)-1):
+            ## store raw delta also as delta class              
+            current_delta_class = delta.Delta(
+                        self.obtained_effect,
+                        feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2],
+                        feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2],
+                        [feedback_obj_vector[pos][0],
+                        feedback_obj_vector[pos][1],
+                        feedback_obj_vector[pos][2],
+                        feedback_obj_vector[pos+1][0],
+                        feedback_obj_vector[pos+1][1],
+                        feedback_obj_vector[pos+1][2]])
+            self.delta_class_vector.append(current_delta_class)
+            
+            ## compute and store discretized values
+            move = discr_move.compute_move_discr(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]])
+    
+            orientation = discr_orien.compute_orientation_discr(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1]],
+                        self.current_orien)
+                             
+            inclination = discr_inclin.compute_inclination_discr(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]],
+                        self.current_inclin)
+
+            distance = discr_dist.compute_distance(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]],
+                        self.current_dist)            
+            
+            self.delta_vector.append([orientation, inclination, distance, move])  
+        print("delta_discr", [orientation, inclination, distance, move])
 
 '''
 Infere trajs for a dataset, algo and nb_init_pos, 
@@ -328,11 +353,11 @@ def infere_trajectories(current_results_folder,
                         current_inclin,
                         current_dist):   
                             
-    print('\n\n\n////////////////////////////////////////////////////////////////')
-    print('////////////////////////////////////////////////////////////////')
-    print('////////////////////////////////////////////////////////////////')
-    print('////////////////////////////////////////////////////////////////')                            
-    print('///////////////////// TRAJECTORY', curr_nb_infere_trajs + 1)
+#    print('\n\n\n////////////////////////////////////////////////////////////////')
+#    print('////////////////////////////////////////////////////////////////')
+#    print('////////////////////////////////////////////////////////////////')
+#    print('//////////////////////INFERRING TRAJECTORIES')                            
+#    print('///////////////////// ITERATION', curr_nb_infere_trajs + 1)
                             
     ## to infer next move
     ie = agrum.LazyPropagation(bn) 
@@ -363,6 +388,8 @@ def infere_trajectories(current_results_folder,
             print("ERROR - restart_world failed")
     else:
         if curr_nb_infere_trajs == 0:
+            sim_param.radio = sim_param.untucked_left_eef_pos[0] - sim_param.first_obj_pos[0]     
+            
             ''' Restart scenario '''
             if sim_param.real_robot:
                 l_eef_init_pos_x = rospy.get_param("/eef_left_init_pos_x")
@@ -377,7 +404,7 @@ def infere_trajectories(current_results_folder,
             else:            
                 success = ros_services.call_restart_world("all")
                 if not success:
-                    print("ERROR - restart_world failed")    
+                    print("ERROR - restart_world failed")  
 
     ''' Get all object pos'''
     obj_pos_dict = OrderedDict()
@@ -388,14 +415,7 @@ def infere_trajectories(current_results_folder,
             if obj_name == 'cube':
                 obj_pos[2] = -0.09
             else:
-                obj_pos[2] = -0.08            
-#        else:
-#            if obj_name == 'cube':
-#                obj_pos[2] = round(obj_pos[2] + 0.055,3)
-#            else:
-#                obj_pos[2] = round(obj_pos[2] + 0.065, 3)
-
-
+                obj_pos[2] = -0.08
         obj_pos_dict[obj_name] = obj_pos
         
     ''' Get first obj pos to compute eef initial pos'''
@@ -407,7 +427,7 @@ def infere_trajectories(current_results_folder,
     _list_x_axis, _list_y_axis, _list_z_axis = \
         setup.gen_init_eef(
             nb_initial_pos,
-            sim_param.untucked_left_eef_pos[0] - obj_pos_dict[sim_param.obj_name_vector[0]][0],
+            sim_param.radio,
             obj_pos_dict[sim_param.obj_name_vector[0]])
 
     if len(_list_x_axis) > 1:
@@ -507,6 +527,46 @@ def infere_trajectories(current_results_folder,
         ## for each effect
         while nb_effect < len(sim_param.effect_values):          
             desired_effect = sim_param.effect_values[nb_effect]
+            
+            ''' Update eef pos'''    
+            eef_pos = ros_services.call_get_eef_pose('left')
+            eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
+            
+            ''' Close gripper '''
+            import baxter_interface
+            rospy.init_node('left_gripper_node')
+            left_gripper = baxter_interface.Gripper('left')
+            rospy.sleep(1)
+            left_gripper.close()
+        
+            ''' Update all object pos'''
+            obj_pos_dict = OrderedDict()
+            for obj_name in sim_param.obj_name_vector:
+                obj_pos = ros_services.call_get_model_state(obj_name)
+                obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
+                if sim_param.real_robot:
+                    if obj_name == 'cube':
+                        obj_pos[2] = -0.09
+                    else:
+                        obj_pos[2] = -0.08            
+                obj_pos_dict[obj_name] = obj_pos
+            
+            ''' Update init pos list '''
+            _list_x_axis, _list_y_axis, _list_z_axis = \
+                setup.gen_init_eef(
+                    nb_initial_pos,
+                    sim_param.radio,
+                    obj_pos_dict[sim_param.obj_name_vector[0]])            
+            if len(_list_x_axis) > 1:
+                init_pos_vector = list(
+                    zip(_list_x_axis, 
+                        _list_y_axis, 
+                        _list_z_axis))
+            else:
+                init_pos_vector = [[_list_x_axis[0],
+                                   _list_y_axis[0],
+                                   _list_z_axis[0]]]
+            init_pos_coord = init_pos_vector[curr_init_pos]
             
             print('\n////////////////////////////////////////////////////////////////')
             print('NEW TRAJ for init_pos', init_pos_coord,
@@ -615,15 +675,11 @@ Infere traj to get a desired effect
 def infere_traj(bn, ie,
                 init_pos_coord,
                 init_pos_vector,
-                initial_obj_pos_dict,
+                obj_pos_dict,
                 expected_effect, 
                 current_orien, current_inclin, current_dist,
                 curr_nb_infere_trajs):
-    
-    eef_pos = ros_services.call_get_eef_pose('left')
-    eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
-    print("eef_pos", eef_pos)  
-    
+ 
     eef_traj_vector = []
     obj_traj_vector = []
 #    delta_vector = []
@@ -638,60 +694,70 @@ def infere_traj(bn, ie,
 #    while execution_active:
    
     ''' Simulate trajectory '''
-    traj, obj_moved, final_obj_pos_dict = simulate_traj(bn, ie, 
-                                   eef_pos,
-                                   initial_obj_pos_dict,
-                                   expected_effect, 
-                                   current_orien,
-                                   current_inclin,
-                                   current_dist)
+    traj, sim_obj_moved, final_obj_pos = \
+        simulate_traj(bn, ie, 
+                       init_pos_coord,
+                       obj_pos_dict,
+                       expected_effect, 
+                       current_orien,
+                       current_inclin,
+                       current_dist)
 
     ''' Plot simulated traj '''
     if sim_param.plot_trajs:
-        below_box = plot_traj_3d(init_pos_vector,
-                                 traj,
-                                 initial_obj_pos_dict,
-                                 init_pos_coord,
-                                 expected_effect)                                  
-        print('\nbelow_box:', below_box)
+        plot_traj_3d(init_pos_vector,
+                     traj,
+                     obj_pos_dict,
+                     init_pos_coord,
+                     expected_effect)                                                  
+        
+    ''' Check if under box '''
+    ## check if trajectory under table
+    below_box = False
+    pos = 0
+    while not below_box and pos < len(traj):
+        below_box = traj[pos] < -0.17
+        pos += 1  
+    print('\nbelow_box:', below_box)        
                               
-    ''' Identify effect '''
-    print('expected_effect: ------------->', expected_effect.upper())
-    print('obtained_effect: ------------->', obtained_effect.upper())
+#    ''' Identify effect '''
+#    print('expected_effect: ------------->', expected_effect.upper())
+#    print('obtained_effect: ------------->', obtained_effect.upper())
     
-    execution_active = True ## still trying to touch object
+#    execution_active = True ## still trying to touch object
             
 #    if expected_effect == obtained_effect and sim_param.exec_traj:
-    if sim_param.exec_traj:
-#        ''' Execute trajectory, listening to feedback '''
-#        tc = Traj_callback(
-#                traj, 
-##                initial_obj_pos,
-##                current_orien, current_inclin, current_dist,
-##                eef_traj_vector, obj_traj_vector, delta_vector, inf_dicr,
-##                delta_class_vector, traj_res,
-##                expected_effect, obtained_effect,
-##                nb_executed_deltas,
-#                below_box)
+#    if sim_param.exec_traj:
+    ''' Execute trajectory, listening to feedback '''
+    tc = Traj_callback(
+            traj,
+            sim_obj_moved,
+#                initial_obj_pos,
+            current_orien, current_inclin, current_dist,
+#                eef_traj_vector, obj_traj_vector, delta_vector, inf_dicr,
+#                delta_class_vector, traj_res,
+#                expected_effect, obtained_effect,
+#                nb_executed_deltas,
+            below_box)
     
-        feaseable_traj = True    
-    
-        ## avoid touching table in REAL ROBOT
-        if sim_param.real_robot and below_box:
-            feaseable_traj = False
-            print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
+#    feaseable_traj = True    
 
-        if feaseable_traj:
-            if sim_param.real_robot:
-                raw_input("PRESS ENTER TO RUN TRAJECTORY.")
-            ## execute trajectory
-            simulated_traj_vector = [i for el in traj for i in el] ## [float]
-            res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-                                                           simulated_traj_vector)
-            if not res_exec:
-                print("FAILED EXECUTION IN ROS !! ")
-            else:
-                print("FINISHED EXECUTION IN ROS !! ")                   
+#    ## avoid touching table in REAL ROBOT
+#    if sim_param.real_robot and below_box:
+#        feaseable_traj = False
+#        print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
+#
+#    if feaseable_traj:
+#        if sim_param.real_robot:
+#            raw_input("PRESS ENTER TO RUN TRAJECTORY.")
+#        ## execute trajectory
+#        simulated_traj_vector = [i for el in traj for i in el] ## [float]
+#        res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
+#                                                       simulated_traj_vector)
+#        if not res_exec:
+#            print("FAILED EXECUTION IN ROS !! ")
+#        else:
+#            print("FINISHED EXECUTION IN ROS !! ")                   
          
 #    while tc.sub_up :
 #        print('Nb of deltas executed :', tc.nb_executed_deltas)
@@ -701,20 +767,24 @@ def infere_traj(bn, ie,
 #        time.sleep(3)
 #        sys.exit()
             
-        ''' Values once trajectory execution stopped (but it can continue) '''
+#        ''' Values once trajectory execution stopped (but it can continue) '''
 #        execution_active = (tc.traj_res == '')
 #        nb_executed_deltas += tc.nb_executed_deltas
 #        print("after exec", execution_active, nb_executed_deltas)
 #        print ("Result obtained.", tc.traj_res)
         
-#        eef_traj_vector = tc.eef_traj_vector
-#        obj_traj_vector = tc.obj_traj_vector
-#        delta_vector = tc.obj_traj_vector
-#        inf_dicr = tc.traj_inferred_discr_delta_vector
-#        delta_class_vector = tc.delta_class_vector
+    eef_traj_vector = tc.eef_traj_vector
+    obj_traj_vector = tc.obj_traj_vector
+#    delta_vector = tc.obj_traj_vector
+    inf_dicr = tc.traj_inferred_discr_delta_vector
+    delta_class_vector = tc.delta_class_vector
 #        traj_res = tc.traj_res
 #        expected_effect = tc.expected_effect
-#        obtained_effect = tc.obtained_effect     
+    obtained_effect = tc.obtained_effect     
+
+    ''' Identify effect '''
+    print('expected_effect: ------------->', expected_effect.upper())
+    print('real obtained_effect: ------------->', obtained_effect.upper())
             
 #        ## if max nb of deltas executed, fail
 #        if traj_res == '':
@@ -722,25 +792,47 @@ def infere_traj(bn, ie,
         
 #        execution_active == tc.sub_up
 
-    else: ## only simulate traj
-        eef_traj_vector = []
-        obj_traj_vector = []
-        delta_vector = []
-        inf_dicr = []
-        delta_class_vector = []
-        if expected_effect in obtained_effect:
-            traj_res = 'success'
-        elif obj_moved:
-            traj_res = 'false_pos'
-        else:
-            traj_res = 'fail'           
-        execution_active == False
+#    else: ## only simulate traj
+#        eef_traj_vector = []
+#        obj_traj_vector = []
+#        delta_vector = []
+#        inf_dicr = []
+#        delta_class_vector = []
+    if expected_effect in obtained_effect:
+        traj_res = 'success'
+    elif sim_obj_moved:
+        traj_res = 'false_pos'
+    else:
+        traj_res = 'fail'           
+#        execution_active == False
                  
 #    traj_res = 'fail'
 #    eef_traj_vector = []
 #    obj_traj_vector = []
 #    inf_dicr = []
 #    delta_class_vector = []
+
+    curr_obj_pos = obj_pos_dict['cube']
+    print('euclidean dist:', d.euclidean(curr_obj_pos, sim_param.first_obj_pos), \
+                            '<', sim_param.obj_too_far_distance)                     
+    if d.euclidean(curr_obj_pos, 
+                   sim_param.first_obj_pos) > sim_param.obj_too_far_distance:
+        print('-------------> UPDATING CUBE POSITION!')
+        ## compute new obj pos
+        new_obj_pos = sim_param.first_obj_pos
+        new_obj_pos = [new_obj_pos[0] + random.uniform(-sim_param.new_obj_pos_dist,
+                                                       sim_param.new_obj_pos_dist),
+                       new_obj_pos[1] + random.uniform(-sim_param.new_obj_pos_dist,
+                                                       sim_param.new_obj_pos_dist),
+                       new_obj_pos[2]]
+        new_obj_pos = [round(poss, sim_param.round_value) for poss in new_obj_pos]
+        
+        ## move obj to new pos    
+        success = ros_services.call_restart_world("object",
+                                                  sim_param.obj_name_vector[0],
+                                                  new_obj_pos)                                                                          
+        if not success:
+            print("ERROR - restart_world failed for object", sim_param.obj_name_vector[0])    
 
     return traj_res, \
             eef_traj_vector, obj_traj_vector, \
@@ -1078,16 +1170,11 @@ def simulate_traj(bn, ie,
                     [next_eef_x,next_eef_y,next_eef_z])
             obj_moved_pose_dict[obj_name] = (obj_moved,obj_pos)
 
-        tmp_all_obj_moved = True
+        all_obj_moved = True
         for name, moved in obj_moved_pose_dict.items():
-            print(name.upper(), "MOVED ? :", moved[0])
-            tmp_all_obj_moved = tmp_all_obj_moved and moved[0]
-        all_obj_moved = tmp_all_obj_moved
-#        prev_mov_delta = [delta_x,
-#                          delta_y,
-#                          delta_z]
+            print('simulated', name.upper(), "MOVED ? :", moved[0])
+            all_obj_moved = all_obj_moved and moved[0]
         i += 1
-        
         ## end delta
 
     return eef_traj, all_obj_moved, obj_moved_pose
@@ -1193,7 +1280,7 @@ def plot_traj_3d(init_pos_vector,
     
     ## view
     ## All commented = diagonal view
-    ax.view_init(90,180) # top view
+    ax.view_init(90,0) # top view
 #    ax.view_init(0,0) # front view
 #    ax.view_init(0,270) # left view
 
@@ -1226,15 +1313,6 @@ def plot_traj_3d(init_pos_vector,
             c='grey')
         
     plt.show()
-    
-    ## check if trajectory under table
-    z_under_object = False
-    pos = 0
-    while not z_under_object and pos < len(eef_pos_vector_z):
-        z_under_object = eef_pos_vector_z[pos] < -0.17
-        pos += 1    
-
-    return z_under_object
 
 '''
 Find pos of value given label 

@@ -6,14 +6,13 @@
 import math
 
 ''' Main parameters '''
-
 real_robot = False
+exec_traj = True
 
 nb_min_init_pos = 4 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
-exec_traj = False
 single_init_pos = False ## if False, circle of init pos around the box
 
 semi_random_trajs = True ## initial trajs using dicretized movs
@@ -33,7 +32,7 @@ print_unknown_affordances = False ## print name of unknown affordances
 ''' Debug '''
 debug = False
 debug_infer = False
-debug_services = True
+debug_services = False
 
 ''' Folder paths '''
 generated_files_folder = 'generated_files/'
@@ -43,7 +42,7 @@ exp_discr_folder = 'discretization/'
 plots_folder = 'plots/'
 
 ''' Inferred trajs '''
-plot_trajs = False ## plot ALL inferred trajectory
+plot_trajs = True ## plot ALL inferred trajectory
 plot_some_trajs = False ## plot SOME inferred trajectory
 save_trajs = False ## save ALL inferred trajectory
 save_some_trajs = False ## save SOME inferred trajectory
@@ -87,17 +86,14 @@ eef_z_value = -0.145
 #nb_NN = 6 ## points around current position to infer next move
 experiment_version = 'intermediate_state'
 nb_infere_trajs = 1
-obj_too_far_distance = 1.5 ## to move it back close to the eef init pos
-new_obj_pos_dist = 0.1 ## for new pos close to init obj pos 
 max_inferred_traj_tries = 1
-first_obj_pos = [0.65, -0.15, -0.13]
 
 ''' ROS execution '''
 feedback_topic = '/a2l/traj_exec_info'
 feedback_window = 1
 current_feedback_window = 0
 obj_moved = False
-obj_moved_threshold = 0.1
+obj_moved_threshold = 0.001
 inferred_traj = []
 
 ''' Experiment set-up values '''
@@ -120,7 +116,7 @@ fixed_obj_pos = False ## if false random obj pos during validation phase
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
 step_length = 0.05 # obj_side/2 ## online computation based on dataset 
 random_max_movs = 7
-inferred_max_moves = 30
+inferred_max_moves = 10
 max_nb_executed_deltas = inferred_max_moves
 
 ''' Discretization predefined values'''
@@ -149,10 +145,10 @@ effect_values = ['left', 'right', 'close', 'far']
 orien_offset = (2*math.pi/nb_min_orientation_sections)/2
 #orien_min_angle = -math.pi + math.pi/2  + orien_offset
 #orien_max_angle = math.pi + math.pi/2 + orien_offset
-orien_min_angle = -math.pi + orien_offset
-orien_max_angle = math.pi + orien_offset
-inclin_min_angle = 0
-inclin_max_angle = math.pi
+orien_min_angle = round(-math.pi + orien_offset, round_value)
+orien_max_angle = round(math.pi + orien_offset, round_value)
+inclin_min_angle = round(0, round_value)
+inclin_max_angle = round(math.pi, round_value)
 
 ''' Performance computation '''
 perf_success_value = 4
@@ -160,9 +156,9 @@ perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 2
-extend_max_trajs = 25
-extend_max_movs = random_max_movs/2
+nb_adapted_iterations = 5
+extend_max_trajs = 50
+extend_max_movs = random_max_movs/3
 nb_init_pos_for_adaption = nb_min_init_pos
 score_threshold = 0
 only_store_different_effects = False ## if TRUE only store new effects obtained
@@ -176,4 +172,8 @@ nb_desired_effect_reproduced = 20 ## nb new effect-related trajs generated
 cube_x = 0.07
 cube_y = 0.085
 cube_z = 0.08
+first_obj_pos = [0.65, 0.1, -0.145]
+obj_too_far_distance = 0.1 ## to move it back close to the eef init pos
+new_obj_pos_dist = 0.025 ## for new pos close to init obj pos 
+radio = 0.2
 
