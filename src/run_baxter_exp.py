@@ -501,7 +501,7 @@ if __name__ == "__main__":
                     
             ## plot last dataset generated
             filename = \
-                sim_param.generated_files_folder + \
+                current_generated_files_folder + \
                 'random_discr_wps_iteration_' + str(nb_iter) + '.csv'
             dataset_stats.plot_dataset_stats(filename)
                     

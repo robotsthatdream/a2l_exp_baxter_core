@@ -76,7 +76,7 @@ def compute_effect(initial_obj_pos, final_obj_pos):
 #        print('ERROR - compute_effect :', 
 #              initial_obj_pos,
 #              final_obj_pos)
-        return None
+        return ''
     else:        
         if delta_x > sim_param.effect_validation*delta_y: ## far or close
             if final_obj_pos[0] > initial_obj_pos[0] :
@@ -89,7 +89,7 @@ def compute_effect(initial_obj_pos, final_obj_pos):
             elif final_obj_pos[1] < initial_obj_pos[1] :
                 return 'right'
             else:
-                return None
+                return ''
 
     
 '''

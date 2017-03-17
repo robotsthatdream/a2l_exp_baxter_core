@@ -33,6 +33,7 @@ import rospy
 import baxter_interface   
     
 import scipy.spatial.distance as distance
+from math import sqrt
 
 '''
 Create directed or random dataset
@@ -236,7 +237,7 @@ def plot_sim_extended_traj(obj_pos,
             traj_vector_y,
             traj_vector_z,
             '-*',
-            linewidth=2)  
+            linewidth=8)  
                         
     plt.show()
 
@@ -342,7 +343,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
     ''' generate max N new trajs '''
     thrs = sim_param.obj_moved_threshold
     nb_new_traj = 0
-#    sim_obtained_effect = None
+#    sim_obtained_effect = ''
     counter = 0    
     while nb_new_traj < sim_param.extend_max_trajs and counter < 10000:
         ## for (almost) each WP of the traj        
@@ -372,7 +373,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
             traj_vector_z = [v[2] for v in tmp_traj]
             nb_new_delta = 0
             sim_obj_moved = False
-            real_obtained_effect = None
+            real_obtained_effect = ''
             extended_delta_vector = tmp_delta
                         
             ''' Generate new traj from a WP'''
@@ -393,8 +394,22 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                     var_x = random.uniform(-step_length/2,step_length/2)
                     var_y = random.uniform(-step_length/2,step_length/2)
 #                    new_z = round(current_z + random.uniform(-step_length,step_length), sim_param.round_value)
-                new_x = round(current_x + var_x, sim_param.round_value)
-                new_y = round(current_y + var_y, sim_param.round_value)                    
+#                new_x = round(current_x + var_x, sim_param.round_value)
+#                new_y = round(current_y + var_y, sim_param.round_value)
+                    
+                ## normalize mov size
+                var_vector = [var_x, var_y]
+                dims_vector = 0               
+                for value in var_vector:
+                    if value != 0:                    
+                        dims_vector += 1
+                if dims_vector == 0:
+                    dims_vector = 1
+                var_vector = [round(value/sqrt(dims_vector), sim_param.round_value)
+                                for value in var_vector]                                                
+                new_x = round(current_x + var_vector[0], sim_param.round_value)
+                new_y = round(current_y + var_vector[1], sim_param.round_value)                    
+
                 ############################################################################## TODO OJO !!!
                 new_z = current_z                    
                     
@@ -412,7 +427,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                         
                 ## store current delta
                 current_delta = delta.Delta(
-                    None, ## effect
+                    '', ## effect
                     current_x,current_y,current_z,
                     new_x, new_y, new_z,
                     [sim_initial_obj_pos[0], sim_initial_obj_pos[1], sim_initial_obj_pos[2],
@@ -425,12 +440,12 @@ def extend_trajectory(current_traj_vector, ## [WPs]
             
             if sim_obj_moved:
                 ## replicate last move
-                traj_vector_x.append(new_x + var_x)
-                traj_vector_y.append(new_y + var_y)
+                traj_vector_x.append(round(new_x + var_x, sim_param.round_value))
+                traj_vector_y.append(round(new_y + var_y, sim_param.round_value))
                 traj_vector_z.append(new_z)
                 
                 replicated_delta = delta.Delta(
-                    None,
+                    '',
                     new_x, new_y, new_z,
                     new_x + var_x, new_y + var_y, new_z,
                     [sim_initial_obj_pos[0], sim_initial_obj_pos[1], sim_initial_obj_pos[2],
@@ -496,7 +511,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                                                                     real_final_obj_pos)
                         print('real_obtained_effect', real_obtained_effect)
                         
-                        if real_obtained_effect != None and \
+                        if real_obtained_effect != '' and \
                             real_obtained_effect in actions_to_learn_vector:
     
                             nb_new_traj += 1

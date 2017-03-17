@@ -155,14 +155,14 @@ inclin_min_angle = round(0, round_value)
 inclin_max_angle = round(math.pi, round_value)
 
 ''' Performance computation '''
-perf_success_value = 8
+perf_success_value = 4
 perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 5
-extend_max_trajs = 1 #2*len(effect_values)
-extend_max_movs = random_max_movs/2
+nb_adapted_iterations = 10
+extend_max_trajs = 1
+extend_max_movs = random_max_movs/1
 nb_init_pos_for_adaption = nb_min_init_pos
 score_threshold = 0
 max_repeated_perf_value = 1500 ## nb iterations until generating new trajs for init_pos and effect

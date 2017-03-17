@@ -83,7 +83,7 @@ class Traj_callback():
         self.delta_class_vector = [] #delta_class_vector
 #        self.traj_res = traj_res ##True or False
 #        self.expected_effect = expected_effect
-        self.obtained_effect = "" #obtained_effect
+        self.obtained_effect = ""
         self.nb_executed_deltas = 0
         self.traj_res = False
 
@@ -716,15 +716,10 @@ def infere_traj(bn, ie,
  
     eef_traj_vector = []
     obj_traj_vector = []
-#    delta_vector = []
     inf_dicr = []
     delta_class_vector = []
     traj_res = ''
     obtained_effect = ''
-    
-#    nb_executed_deltas = 0
-    
-#    while execution_active:
    
     ''' Simulate trajectory '''
     traj, sim_obj_moved, final_obj_pos = \
@@ -755,100 +750,36 @@ def infere_traj(bn, ie,
         pos += 1  
     if sim_param.debug_infer:
         print('\nbelow_box:', below_box)        
-                              
-#    ''' Identify effect '''
-#    print('expected_effect: ------------->', expected_effect.upper())
-#    print('obtained_effect: ------------->', obtained_effect.upper())
-    
-#    execution_active = True ## still trying to touch object
-            
-#    if expected_effect == obtained_effect and sim_param.exec_traj:
-#    if sim_param.exec_traj:
+
     ''' Execute trajectory, listening to feedback '''
     tc = Traj_callback(
             traj,
             sim_obj_moved,
-#                initial_obj_pos,
             current_orien, current_inclin, current_dist,
-#                eef_traj_vector, obj_traj_vector, delta_vector, inf_dicr,
-#                delta_class_vector, traj_res,
-#                expected_effect, obtained_effect,
-#                nb_executed_deltas,
             below_box)
-    
-#    feaseable_traj = True    
-
-#    ## avoid touching table in REAL ROBOT
-#    if sim_param.real_robot and below_box:
-#        feaseable_traj = False
-#        print("-----------------> TRAJECTORY NOT EXECUTED !! TOUCHING THE TABLE!!! ")       
-#
-#    if feaseable_traj:
-#        if sim_param.real_robot:
-#            raw_input("PRESS ENTER TO RUN TRAJECTORY.")
-#        ## execute trajectory
-#        simulated_traj_vector = [i for el in traj for i in el] ## [float]
-#        res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-#                                                       simulated_traj_vector)
-#        if not res_exec:
-#            print("FAILED EXECUTION IN ROS !! ")
-#        else:
-#            print("FINISHED EXECUTION IN ROS !! ")                   
-         
-#    while tc.sub_up :
-#        print('Nb of deltas executed :', tc.nb_executed_deltas)
-            
-            
-#        import time
-#        time.sleep(3)
-#        sys.exit()
-            
-#        ''' Values once trajectory execution stopped (but it can continue) '''
-#        execution_active = (tc.traj_res == '')
-#        nb_executed_deltas += tc.nb_executed_deltas
-#        print("after exec", execution_active, nb_executed_deltas)
-#        print ("Result obtained.", tc.traj_res)
         
     eef_traj_vector = tc.eef_traj_vector
     obj_traj_vector = tc.obj_traj_vector
-#    delta_vector = tc.obj_traj_vector
     inf_dicr = tc.traj_inferred_discr_delta_vector
     delta_class_vector = tc.delta_class_vector
-#        traj_res = tc.traj_res
-#        expected_effect = tc.expected_effect
+
     obtained_effect = tc.obtained_effect     
 
     ''' Identify effect '''
-#    print('expected_effect: ------------->', expected_effect.upper())
-    if obtained_effect != None:
+    if obtained_effect != "":
         print('real obtained_effect: ------------->', obtained_effect.upper())
-            
-#        ## if max nb of deltas executed, fail
-#        if traj_res == '':
-#            traj_res = 'fail'
         
-#        execution_active == tc.sub_up
-
-#    else: ## only simulate traj
-#        eef_traj_vector = []
-#        obj_traj_vector = []
-#        delta_vector = []
-#        inf_dicr = []
-#        delta_class_vector = []
         if expected_effect in obtained_effect:
             traj_res = 'success'
-        elif sim_obj_moved:
-            traj_res = 'false_pos'
         else:
-            traj_res = 'fail'           
-#        execution_active == False
-                 
-#    traj_res = 'fail'
-#    eef_traj_vector = []
-#    obj_traj_vector = []
-#    inf_dicr = []
-#    delta_class_vector = []
+            if sim_obj_moved:
+                traj_res = 'false_pos'
+            else:
+                traj_res = 'fail'
+    else:
+        traj_res = 'fail'
 
+    ''' Update scenario '''
     curr_obj_pos = obj_pos_dict['cube']
     if sim_param.debug_infer:
         print('euclidean dist:', d.euclidean(curr_obj_pos, sim_param.first_obj_pos), \
@@ -891,7 +822,7 @@ def simulate_traj(bn, ie,
                 current_inclin,
                 current_dist):
     
-    eef_traj = [[round(eef_pos[0],2),
+    eef_traj = [[round(eef_pos[0], 2),
                  round(eef_pos[1], 2), 
                  round(eef_pos[2], 2)]]
     delta_vector = [] ## [next_mov_discr,[(distance, orientation, inclination)]]
@@ -950,7 +881,7 @@ def simulate_traj(bn, ie,
                   'with prob value', prob_value)
                 if same_prob:
                     print('-------------------------------> UNKNOWN PROBABILITY, STOP INFERENCE')
-                    return [], False, obj_pos_dict[obj_name]                        
+                    return eef_traj, False, obj_pos_dict[obj_name]                        
                         
                 next_mov_discr = [next_mov_discr] ## to compute move later
             except Exception as e: 
@@ -1356,6 +1287,7 @@ def plot_save_traj_3d(init_pos_vector,
             eef_pos_vector_y, 
             eef_pos_vector_z,
             '-',
+            linewidth = 8,
             color = 'blue')
     ax.plot(eef_pos_vector_x, 
             eef_pos_vector_y, 
@@ -1477,29 +1409,29 @@ def infere_mov(bn, ie, node_names, node_values):
         posterior_value = posterior_list[posterior_pos]
         max_pos = posterior_list.index(max_value)
         
-        ## choose posterior value
-        if max_value > 0.9: ## very high
-            posterior_pos = max_pos              
-        else: ## several probs
-            posterior_list[max_pos] = 0
-            second_max_value = max(posterior_list)
-            second_max_pos = posterior_list.index(max(posterior_list))
-
-#            if max_value > 2*second_max_value: ## far probs
-#                posterior_pos = max_pos
-#            else: ## close probs
+#        ## choose posterior value
+#        if max_value > 0.9: ## very high
+#            posterior_pos = max_pos              
+#        else: ## several probs
+#            posterior_list[max_pos] = 0
+#            second_max_value = max(posterior_list)
+#            second_max_pos = posterior_list.index(max(posterior_list))
+#
+##            if max_value > 2*second_max_value: ## far probs
+##                posterior_pos = max_pos
+##            else: ## close probs
+##                posterior_pos = random.choice([max_pos, second_max_pos])
+#
+#            if max_value == second_max_value:
 #                posterior_pos = random.choice([max_pos, second_max_pos])
-
-            if max_value == second_max_value:
-                posterior_pos = random.choice([max_pos, second_max_pos])
-            else:
-                posterior_pos = max_pos
+#            else:
+#                posterior_pos = max_pos
 
         ## assign posterior value            
         if posterior_pos == max_pos:
             posterior_value = max_value
-        else:
-            posterior_value = second_max_value
+#        else:
+#            posterior_value = second_max_value
             
     move_value = (posterior.variablesSequence())[0].label(posterior_pos)    
     if sim_param.debug:

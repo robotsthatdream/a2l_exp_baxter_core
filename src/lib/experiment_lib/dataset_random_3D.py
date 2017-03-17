@@ -239,7 +239,7 @@ def create_discr_trajs(nb_initial_pos,
             sim_obj_moved = False
             real_obj_moved = False
             current_delta_vector = []
-            real_effect = None
+            real_effect = ''
             while nb_delta < sim_param.random_max_movs and \
                 not real_obj_moved: # only N movs (delta) allowed
 
@@ -249,12 +249,12 @@ def create_discr_trajs(nb_initial_pos,
                 current_y = y_i[-1]
                 current_z = z_i[-1]
                 if sim_param.semi_random_trajs:
-                    new_x = current_x + random.choice(step_options)
-                    new_y = current_y + random.choice(step_options)
+                    new_x = round(current_x + random.choice(step_options), sim_param.round_value)
+                    new_y = round(current_y + random.choice(step_options), sim_param.round_value)
 #                    new_z = current_z + random.choice(step_options)
                 else:
-                    new_x = current_x + random.uniform(-step_length,step_length)
-                    new_y = current_y + random.uniform(-step_length,step_length)
+                    new_x = round(current_x + random.uniform(-step_length,step_length), sim_param.round_value)
+                    new_y = round(current_y + random.uniform(-step_length,step_length), sim_param.round_value)
 #                    new_z = current_z + random.uniform(-step_length,step_length)   
                 
                 
@@ -333,7 +333,7 @@ def create_discr_trajs(nb_initial_pos,
                                                            real_final_obj_pos)                                                                                                       
                         print("real_effect", real_effect)
                         
-                        if real_effect != None:
+                        if real_effect != '':
                             ## stop generating wps if max trajs inferred
                             nb_box_touched += 1
                             print('nb_box_touched', nb_box_touched)

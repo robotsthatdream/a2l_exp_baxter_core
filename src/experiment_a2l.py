@@ -243,7 +243,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                 current_orien_discr,
                                 current_inclin_discr,
                                 current_dist_discr)
-    discr_delta_vector = discr_delta_vector + prev_inferred_discr_delta_vector
+    discr_delta_vector = discr_delta_vector ## + prev_inferred_discr_delta_vector
     
     ## remove small moves
     nb_removed = 0
