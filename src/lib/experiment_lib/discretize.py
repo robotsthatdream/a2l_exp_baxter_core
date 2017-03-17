@@ -22,6 +22,8 @@ else:
     import discretize_distance_sections as discr_dist
     import discretize_inclination_sections as discr_inclin
     
+import environment_delta as delta
+    
 
 '''
 Compute distance discretization
@@ -85,7 +87,8 @@ Discretize trajectories
 def discretize_trajs(delta_vector,
                      current_orien_discr, 
                      current_inclin_discr,
-                     current_dist_discr):    
+                     current_dist_discr):
+                         
     discr_dataset_vector = []
     nb_delta = 0
     while nb_delta < len(delta_vector)-1:
@@ -112,27 +115,20 @@ def discretize_trajs(delta_vector,
                                  [current_delta.get_wp_init().get_x(),
                                  current_delta.get_wp_init().get_y()],
                                  current_delta.get_obj_init(obj_id),
-    #                             [current_delta.get_obj_init().get_x(),
-    #                             current_delta.get_obj_init().get_y()],
                                  current_orien_discr)                                 
-                ''' Compute inclination ''' 
-                inclination = discr_inclin.compute_inclination_discr(
-#                                 [current_delta.get_obj_init().get_x(),
-#                                 current_delta.get_obj_init().get_y(),
-#                                 current_delta.get_obj_init().get_z()],
-                                 current_delta.get_obj_init(obj_id),                
-                                 [current_delta.get_wp_init().get_x(),
-                                 current_delta.get_wp_init().get_y(),
-                                 current_delta.get_wp_init().get_z()],                             
-                                 current_inclin_discr)    
+#                ''' Compute inclination ''' 
+#                inclination = discr_inclin.compute_inclination_discr(
+#                                 current_delta.get_obj_init(obj_id),                
+#                                 [current_delta.get_wp_init().get_x(),
+#                                 current_delta.get_wp_init().get_y(),
+#                                 current_delta.get_wp_init().get_z()],                             
+#                                 current_inclin_discr)
+                inclination = 'inclin_4'
                 ''' Compute distance '''
                 distance = discr_dist.compute_distance(
                              [current_delta.get_wp_init().get_x(),
                              current_delta.get_wp_init().get_y(),
                              current_delta.get_wp_init().get_z()],
-#                             [current_delta.get_obj_init().get_x(),
-#                             current_delta.get_obj_init().get_y(),
-#                             current_delta.get_obj_init().get_z()],
                              current_delta.get_obj_init(obj_id),                             
                              current_dist_discr)            
                 discr_delta_values = discr_delta_values + [distance, orientation, inclination]
@@ -142,11 +138,6 @@ def discretize_trajs(delta_vector,
 #                   distance,
 #                   orientation,
 #                   inclination])
-#            discr_dataset_vector.append([current_delta.get_effect(), 
-#                                         orientation,
-#                                         inclination,
-#                                         move,
-#                                         distance])
         
 #        print(discr_delta_values)
         discr_dataset_vector.append(discr_delta_values)

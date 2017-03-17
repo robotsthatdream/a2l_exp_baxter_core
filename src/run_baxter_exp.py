@@ -87,37 +87,49 @@ def print_sim_param(print_values,
 '''
 Generate folders
 '''
-def generate_folders():
-    current_generated_files_folder = os.getcwd() + '/' + sim_param.generated_files_folder
-    if not os.path.exists(current_generated_files_folder):
-        os.makedirs(current_generated_files_folder)    
+def generate_folders(): 
     
-    if sim_param.save_trajs or sim_param.save_some_trajs:
-        if sim_param.experiment_type == 'change_dataset_size':
-            exp_folder = sim_param.exp_dataset_size_folder
-            extra_info = '_' + str(sim_param.nb_min_orientation_sections) + \
-                         '_' + str(sim_param.nb_min_distance_sections)
-        elif sim_param.experiment_type == 'change_discretization':
-            exp_folder = sim_param.exp_discr_folder
-            extra_info = '_' + str(sim_param.nb_min_init_pos)
-        else:
-            print('ERROR - generate_folders - exp type unknown')
-            sys.exit()
-            
-        current_results_folder = os.getcwd() + '/' + \
-                        sim_param.results_folder + \
-                        exp_folder + \
-                        strftime("%Y-%m-%d_%H:%M:%S", 
-                        gmtime()) + \
-                        extra_info + \
-                        '/'
-                            
-        if not os.path.exists(current_results_folder):
-            os.makedirs(current_results_folder)
+    if sim_param.experiment_type == 'a2l_dataset_extension':
+        exp_folder = sim_param.exp_dataset_size_folder
+        extra_info = '_' + str(sim_param.nb_min_orientation_sections) + \
+                     '_' + str(sim_param.nb_min_distance_sections)
+    elif sim_param.experiment_type == 'change_discretization':
+        exp_folder = sim_param.exp_discr_folder
+        extra_info = '_' + str(sim_param.nb_min_init_pos)
     else:
-        current_results_folder = ''
+        print('ERROR - generate_folders - exp type unknown')
+        sys.exit()
+        
+    ''' Results folder '''
+    current_results_folder = os.getcwd() + '/' + \
+                             sim_param.results_folder + \
+                             exp_folder + \
+                             strftime("%Y-%m-%d_%H:%M:%S", 
+                             gmtime()) + \
+                             extra_info + \
+                             '/'                        
+    if not os.path.exists(current_results_folder):
+        os.makedirs(current_results_folder)
+
+    ''' Generated folder '''
+    current_generated_files_folder = os.getcwd() + '/' + \
+                                     sim_param.generated_files_folder  + \
+                                     exp_folder + \
+                                     strftime("%Y-%m-%d_%H:%M:%S", 
+                                     gmtime()) + \
+                                     extra_info + \
+                                     '/'
+    if not os.path.exists(current_generated_files_folder):
+        os.makedirs(current_generated_files_folder)
     
-    current_plot_folder = os.getcwd() + '/' + sim_param.plots_folder
+    ''' Plots folder '''
+    current_plot_folder = os.getcwd() + '/' + \
+                          sim_param.plots_folder + \
+                          exp_folder + \
+                          strftime("%Y-%m-%d_%H:%M:%S", 
+                          gmtime()) + \
+                          extra_info + \
+                          '/'    
     if not os.path.exists(current_plot_folder):
         os.makedirs(current_plot_folder)    
 
@@ -212,13 +224,19 @@ if __name__ == "__main__":
         dataset_stats_vector, initial_pos_vector, \
         current_orien_discr, current_inclin_discr, \
         current_dist_discr, \
-        initial_raw_delta_vector, filename = \
+        initial_raw_delta_vector, \
+        discr_dataset_filename = \
             exp_a2l.basic_learning_dataset_size(
                 dataset_type_vector,
                 learn_algo_vector,
-                current_results_folder)
+                current_results_folder,
+                current_generated_files_folder,
+                current_plot_folder)
 
         if sim_param.experiment_type == 'a2l_dataset_extension':
+            
+            print('Initial raw deltas vector size:', 
+                  len(initial_raw_delta_vector))
                                         
             ''' Compute score '''
             for dataset_stat in dataset_stats_vector:
@@ -238,7 +256,7 @@ if __name__ == "__main__":
             ''' Plot stats basic learning'''
             if sim_param.plot_stats:            
                 ## plot dataset generated
-                dataset_stats.plot_dataset_stats(filename)
+                dataset_stats.plot_dataset_stats(discr_dataset_filename)
                 
                 if sim_param.nb_dataset_sizes == 1:
                     ## plot results of inferred trajectories for 1 size
@@ -357,8 +375,8 @@ if __name__ == "__main__":
                         previous_iter_dataset_stats_class,
                         sim_param.nb_init_pos_for_adaption, ## 8
                         learn_algo_vector,
-#                        initial_obj_pos,
-                        current_results_folder, 
+                        current_results_folder,
+                        current_generated_files_folder,                        
                         current_orien_discr, 
                         current_inclin_discr,
                         current_dist_discr,
@@ -392,11 +410,11 @@ if __name__ == "__main__":
                 better_norm_score = infer_ros.check_better_score_norm(current_iter_score_vector, 
                                                         previous_iter_score_vector)
                 current_iter_data_class = iter_class.Iteration_data(
-                     current_iter_dataset_stats_class_stats_vector, ## only random
-                     current_iter_dataset_stats_class_perf_value_vector, ## only random
-                     current_iter_raw_delta_vector, ## only random
+                     current_iter_dataset_stats_class_stats_vector, ## only for random
+                     current_iter_dataset_stats_class_perf_value_vector, ## only for random
+                     current_iter_raw_delta_vector, ## only for random
                      better_norm_score,
-                     effect_directed_extension_vector) ## equal, better or smaller                     
+                     effect_directed_extension_vector) ## equal, better or smaller
                 iterations_dict[nb_iter] = current_iter_data_class     
 
                 ''' Compute cumulated performance value for init_pos and effect'''
@@ -442,7 +460,8 @@ if __name__ == "__main__":
                                 iterations_dict,
                                 sim_param.nb_init_pos_for_adaption,
                                 current_algo,
-                                nb_iter+1)
+                                nb_iter + 1,
+                                current_plot_folder)
                 else :
                     print('\nTemporal new raw entries', 
                           len(current_iter_raw_delta_vector) - 
@@ -477,7 +496,8 @@ if __name__ == "__main__":
                     iterations_dict,
                     sim_param.nb_init_pos_for_adaption,
                     current_algo,
-                    nb_iter)
+                    nb_iter + 1,
+                    current_plot_folder)
                     
             ## plot last dataset generated
             filename = \

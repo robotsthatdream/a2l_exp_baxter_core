@@ -71,16 +71,25 @@ Real coordinates
 def compute_effect(initial_obj_pos, final_obj_pos):
     delta_x = abs(final_obj_pos[0] - initial_obj_pos[0])
     delta_y = abs(final_obj_pos[1] - initial_obj_pos[1])
-    if delta_x > delta_y: ## up or down
-        if final_obj_pos[0] > initial_obj_pos[0] :
-            return 'far'
-        elif final_obj_pos[0] < initial_obj_pos[0] :    
-            return 'close'
-    else:
-        if final_obj_pos[1] > initial_obj_pos[1] :
-            return 'left'
-        elif final_obj_pos[1] < initial_obj_pos[1] :
-            return 'right'
+    
+    if delta_x == 0 and delta_y == 0:
+#        print('ERROR - compute_effect :', 
+#              initial_obj_pos,
+#              final_obj_pos)
+        return None
+    else:        
+        if delta_x > sim_param.effect_validation*delta_y: ## far or close
+            if final_obj_pos[0] > initial_obj_pos[0] :
+                return 'far'
+            elif final_obj_pos[0] < initial_obj_pos[0] :    
+                return 'close'
+        elif delta_x*sim_param.effect_validation < delta_y: ## left or right
+            if final_obj_pos[1] > initial_obj_pos[1] :
+                return 'left'
+            elif final_obj_pos[1] < initial_obj_pos[1] :
+                return 'right'
+            else:
+                return None
 
     
 '''

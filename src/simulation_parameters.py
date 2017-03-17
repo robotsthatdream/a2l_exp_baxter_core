@@ -8,23 +8,25 @@ import math
 ''' Main parameters '''
 real_robot = False
 exec_traj = True
+new_dataset = False ## False to use the initial current dataset
 
-nb_min_init_pos = 4 ## better if mod 4
+nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
 single_init_pos = False ## if False, circle of init pos around the box
 
-semi_random_trajs = True ## initial trajs using dicretized movs
+semi_random_trajs = True ## initial and extended trajs using dicretized movs
 discr_hand_coded = False
 discr_random = False
 
 ''' Global variables '''
 print_time = False ## print elapsed time for some functions
 plot_dataset_stats = True ## plot the content of the discretized dataset
-new_dataset = True ## True to generate a new dataset, False to use current one
 dpi = 300 
 round_value = 2
+effect_validation = 3 ## number of times a move in an axis must be > than 
+                      ## in the other one to be accepted as effect
 
 print_prob_table_values = False ## print the CPTs values
 print_unknown_affordances = False ## print name of unknown affordances
@@ -36,15 +38,16 @@ debug_services = False
 
 ''' Folder paths '''
 generated_files_folder = 'generated_files/'
+generated_datasets_folder = '/home/maestre/git/a2l_exp_baxter_actions/src/generated_datasets/'
 results_folder = 'results/'
 exp_dataset_size_folder = 'dataset_size/'
 exp_discr_folder = 'discretization/'
 plots_folder = 'plots/'
 
 ''' Inferred trajs '''
-plot_trajs = True ## plot ALL inferred trajectory
+plot_trajs = False ## plot ALL inferred trajectory
 plot_some_trajs = False ## plot SOME inferred trajectory
-save_trajs = False ## save ALL inferred trajectory
+save_trajs = True ## save ALL inferred trajectory
 save_some_trajs = False ## save SOME inferred trajectory
 
 ''' Variables '''
@@ -58,7 +61,7 @@ score_k2 = False
 
 ''' Stats '''
 plot_stats = True ## plot the resulting stats
-save_stats = False ## save the resulting plot stats
+save_stats = True ## save the resulting plot stats
 print_stats = False ## print the numeric stats vectors
 
 ''' Print datasets '''
@@ -80,6 +83,7 @@ plot_dataset_size_score = True ## plot the score in the dataset size plots
 nb_dataset_sizes = 1 ## number of increments of init pos : 8->16->32->64
 #eef_z_value = 0.14
 eef_z_value = -0.145
+eef_width = 0.02
 
 ''' Experiment Reproduce dataset (learn by demonstration) '''
 #experiment_type = 'a2l_reproduce_dataset'
@@ -116,7 +120,7 @@ fixed_obj_pos = False ## if false random obj pos during validation phase
 #same_orientation_value = obj_side/2 ## ej. with same x value, y=0 is under 0.1, 'down'
 step_length = 0.05 # obj_side/2 ## online computation based on dataset 
 random_max_movs = 7
-inferred_max_moves = 10
+inferred_max_moves = 12
 max_nb_executed_deltas = inferred_max_moves
 
 ''' Discretization predefined values'''
@@ -151,18 +155,16 @@ inclin_min_angle = round(0, round_value)
 inclin_max_angle = round(math.pi, round_value)
 
 ''' Performance computation '''
-perf_success_value = 4
+perf_success_value = 8
 perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
 nb_adapted_iterations = 5
-extend_max_trajs = 50
-extend_max_movs = random_max_movs/3
+extend_max_trajs = 1 #2*len(effect_values)
+extend_max_movs = random_max_movs/2
 nb_init_pos_for_adaption = nb_min_init_pos
 score_threshold = 0
-only_store_different_effects = False ## if TRUE only store new effects obtained
-                                    ## based on a succesfull traj (better diversity)
 max_repeated_perf_value = 1500 ## nb iterations until generating new trajs for init_pos and effect
 nb_desired_effect_reproduced = 20 ## nb new effect-related trajs generated
 

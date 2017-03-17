@@ -36,8 +36,8 @@ def gen_init_eef(nb_init_pos,
         for a in list_radians:
             list_x_axis.append(obj_pos[0] + cos(a)*radius)
             list_y_axis.append(obj_pos[1] + sin(a)*radius)    
-        list_z_axis = [obj_pos[2] for i in range(len(list_x_axis))]
-#        list_z_axis = [sim_param.eef_z_value for i in range(len(list_x_axis))]              
+#        list_z_axis = [obj_pos[2] for i in range(len(list_x_axis))]
+        list_z_axis = [sim_param.eef_z_value for i in range(len(list_x_axis))]              
         
         return list_x_axis, list_y_axis, list_z_axis
 

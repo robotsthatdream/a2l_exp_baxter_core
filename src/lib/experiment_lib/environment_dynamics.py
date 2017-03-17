@@ -181,7 +181,7 @@ def compute_obj_pos(box_pos,
 #                        _wp[1] + (i+1)*delta_y, 
 #                        _wp[2] + (i+1)*delta_z)
 
-        eef_width = 0.01
+        eef_width = sim_param.eef_width
 
         if wp_next.x <= l_bottom_front_right.x + eef_width and \
             wp_next.y >= l_bottom_front_right.y - eef_width and \

@@ -12,7 +12,6 @@ sys.path.append(lib_exp_path)
 import dataset_generation as dataset
 import discretize as discr
 import inference_ros as infer_ros
-#import inf_traj_single_dataset_classes as dataset_single_classes
 import learning as ln
 import simulation_parameters as sim_param
 import inf_traj_series_dataset_classes as dataset_series_classes
@@ -25,7 +24,9 @@ Run basic learning
 '''
 def basic_learning_dataset_size(dataset_type_vector,
                                 learn_algo_vector,
-                                current_results_folder):
+                                current_results_folder,
+                                current_generated_files_folder,
+                                current_plot_folder):
           
     ## Create discretizations
     current_orien_discr = discr.compute_orientation_discr()
@@ -41,26 +42,26 @@ def basic_learning_dataset_size(dataset_type_vector,
         print('----------------------------------------------------------')
         print('----------------------------------------------------------\n\n')    
              
-        ## Dataset name
+        ## Raw dataset name
         if sim_param.real_robot:
             raw_dataset_filename = \
                 '/home/maestre/.ros/eef_trajectory_recorder.csv'                        
         else:
             if dataset_type == 'directed':
-                raw_dataset_filename = sim_param.generated_files_folder + 'directed_dataset.csv'  
+                raw_dataset_filename = sim_param.generated_datasets_folder + 'directed_dataset.csv'  
             elif dataset_type == 'random':
-                raw_dataset_filename = sim_param.generated_files_folder + 'random_dataset.csv'
+                raw_dataset_filename = sim_param.generated_datasets_folder + 'random_dataset.csv'
             else:
-                print('ERROR - main - wrong dataset_type value')                    
+                print('ERROR - main - wrong dataset_type value')                 
 
         ## Create raw dataset
         raw_delta_vector = []
         if sim_param.new_dataset:
             if dataset_type == 'directed':
                 ros_services.call_generate_directed_dataset(dataset_type)
-            elif dataset_type == 'random': ## dataset not stored, just passed
-                raw_delta_vector =  dataset.create_dataset(dataset_type, 
-                                                           current_nb_initial_pos)
+            elif dataset_type == 'random':
+                dataset.create_dataset(dataset_type, 
+                                       current_nb_initial_pos)
             else:
                 print('ERROR - main - wrong dataset_type value')
    
@@ -71,30 +72,36 @@ def basic_learning_dataset_size(dataset_type_vector,
         for tmp_algo in learn_algo_vector:
             tmp_algo_stats = dataset_series_classes.Algo_stats(tmp_algo)
             current_dataset_stats.add_algo_results(tmp_algo, 
-                                                   tmp_algo_stats)
-                                                   
+                                                   tmp_algo_stats)                                                   
         basic_size = sim_param.nb_min_init_pos       
         nb_initial_pos_vector = [basic_size * repetitions 
                                 for repetitions in 
                                 range(1, sim_param.nb_dataset_sizes+1)]                                                      
         
-        ## read dataset
+        ## Tranform raw delta dataset into deltas (only directed)
         if dataset_type == 'directed':
             raw_delta_vector = dataset.read_dataset(raw_dataset_filename)
+            
+        ## Read available raw delta dataset (only random)
+        elif dataset_type == 'random':
+            raw_deltas_dataset_filename = sim_param.generated_datasets_folder + 'random_dataset_deltas.csv'
+            raw_delta_vector = dataset.read_delta_dataset(raw_deltas_dataset_filename)
+        else:
+            print('ERROR - main - wrong dataset_type value')
         
         ## discretize dataset
         if dataset_type == 'directed':
-            discr_dataset_filename = sim_param.generated_files_folder + 'directed_discr_wps.csv'
+            discr_dataset_filename = current_generated_files_folder + 'directed_discr_wps_initial.csv'
         elif dataset_type == 'random':
-            discr_dataset_filename = sim_param.generated_files_folder + 'random_discr_wps.csv'        
+            discr_dataset_filename = current_generated_files_folder + 'random_discr_wps_initial.csv'
         else:
-            print('ERROR - main - wrong dataset_type value')   
+            print('ERROR - main - wrong dataset_type value')
             
         discr_delta_vector = discr.discretize_trajs(
                                     raw_delta_vector,
                                     current_orien_discr,
                                     current_inclin_discr,
-                                    current_dist_discr,)
+                                    current_dist_discr)
                                 
         if dataset_type == 'random': ## remove the very small deltas
             nb_removed = 0
@@ -117,6 +124,7 @@ def basic_learning_dataset_size(dataset_type_vector,
             print('----------------------------------------------------------')
             print('Learning BN in the', dataset_type.upper(), 'dataset',
                   'with', current_algo.upper(),  'algorithm')
+            print('INITIAL BABBLING')                    
             print('----------------------------------------------------------')
             print('----------------------------------------------------------\n\n')                   
 
@@ -129,7 +137,7 @@ def basic_learning_dataset_size(dataset_type_vector,
             bn = ln.learn_bn(discr_dataset_filename, current_algo)
             bn_url = 'BN_' + dataset_type + '_' + current_algo + '.bif'                
             ln.save_bn(bn, 
-                       sim_param.generated_files_folder + bn_url)                           
+                       current_generated_files_folder + bn_url)                           
             if sim_param.print_time:
                 print('Elapsed time for learn_bn', 
                       time.process_time() - t)
@@ -139,6 +147,13 @@ def basic_learning_dataset_size(dataset_type_vector,
                 max_nb_infere_trajs = sim_param.nb_infere_trajs
             else:
                 max_nb_infere_trajs = 1
+                
+            print('\n----------------------------------------------------------')
+            print('----------------------------------------------------------')
+            print('Validating BN ')
+            print('INITIAL BABBLING')  
+            print('----------------------------------------------------------')
+            print('----------------------------------------------------------\n\n')                  
                 
             while curr_nb_infere_trajs < max_nb_infere_trajs:                                    
                 ## validate affordance knowledge                                
@@ -179,7 +194,8 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                     current_nb_initial_pos, ## 8
                                     learn_algo_vector,
 #                                    current_obj_pos,
-                                    current_results_folder, 
+                                    current_results_folder,
+                                    current_generated_files_folder,
                                     current_orien_discr,
                                     current_inclin_discr,
                                     current_dist_discr,
@@ -208,6 +224,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
     
     ## For each successful trajectory generate new ones
     print("----->Extending trajectory".upper())
+    
     new_raw_delta_vector, effect_directed_extension_vector = \
         dataset.extend_dataset(
             current_dataset_stats,
@@ -217,7 +234,8 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
             len(previous_raw_delta_vector))
     
     extended_raw_delta_vector = previous_raw_delta_vector + \
-                                new_raw_delta_vector    
+                                new_raw_delta_vector
+    print('Num TOTAL deltas:', len(extended_raw_delta_vector))
     
     ## discretize dataset
     discr_delta_vector = discr.discretize_trajs(
@@ -237,7 +255,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         print(nb_removed,'very small movements were removed')                        
     
     ## store discretized dataset
-    discr_dataset_filename = sim_param.generated_files_folder + \
+    discr_dataset_filename = current_generated_files_folder + \
                 'random_discr_wps_iteration_' + str(current_iteration) + '.csv'
     discr.save_discr_deltas(discr_dataset_filename, 
                             discr_delta_vector)                
@@ -248,6 +266,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         print('----------------------------------------------------------')
         print('Learning BN in the EXTENDED', current_dataset_name.upper(), 'dataset',
               'with', current_algo.upper(),  'algorithm')
+        print('ITERATION', current_iteration)                  
         print('----------------------------------------------------------')
         print('----------------------------------------------------------\n\n')                   
                                                
@@ -255,11 +274,12 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         bn = ln.learn_bn(discr_dataset_filename, current_algo)
         bn_url = 'BN_' + current_dataset_name + '_' + current_algo + '.bif'                
         ln.save_bn(bn, 
-                   sim_param.generated_files_folder + bn_url)                           
+                   current_generated_files_folder + bn_url)                           
 
         print('\n----------------------------------------------------------')
         print('----------------------------------------------------------')
         print('Validating BN ')
+        print('ITERATION', current_iteration)    
         print('----------------------------------------------------------')
         print('----------------------------------------------------------\n\n')  
      
