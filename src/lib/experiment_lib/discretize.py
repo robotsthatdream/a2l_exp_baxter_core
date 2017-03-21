@@ -108,13 +108,14 @@ def discretize_trajs(delta_vector,
 
         if move != 'zero':
             discr_delta_values = [current_delta.get_effect(), move]        
-            for obj_id in range(len(sim_param.obj_name_vector)):
+#            for obj_id in range(len(sim_param.obj_name_vector)):
+            if True:
                 
                 ''' Compute orientation ''' 
                 orientation = discr_orien.compute_orientation_discr(
                                  [current_delta.get_wp_init().get_x(),
                                  current_delta.get_wp_init().get_y()],
-                                 current_delta.get_obj_init(obj_id),
+                                 current_delta.get_obj_init(),
                                  current_orien_discr)                                 
 #                ''' Compute inclination ''' 
 #                inclination = discr_inclin.compute_inclination_discr(
@@ -129,7 +130,7 @@ def discretize_trajs(delta_vector,
                              [current_delta.get_wp_init().get_x(),
                              current_delta.get_wp_init().get_y(),
                              current_delta.get_wp_init().get_z()],
-                             current_delta.get_obj_init(obj_id),                             
+                             current_delta.get_obj_init(),                             
                              current_dist_discr)            
                 discr_delta_values = discr_delta_values + [distance, orientation, inclination]
                                           

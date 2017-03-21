@@ -272,8 +272,8 @@ def compute_obj_pos(box_pos,
 #    if obj_moved:        
 ##        print('EEF TMP POS', wp[0], wp[1], wp[2])
 ##        print('EEF TMP NEXT POS', wp_final[0], wp_final[1], wp_final[2])        
-#        wp = [round(pos, sim_param.round_value+1) for pos in wp]
-#        wp_final = [round(pos, sim_param.round_value+1) for pos in wp_final]
+#        wp = [round(pos, sim_param.round_value) for pos in wp]
+#        wp_final = [round(pos, sim_param.round_value) for pos in wp_final]
 #
 #        z_max_value_box = obj_pos[2] + sim_param.cube_z/2          
 #        if wp[2] > z_max_value_box:
@@ -310,7 +310,7 @@ def compute_obj_pos(box_pos,
 #            elif wp[0] > wp_final[0]: ## close
 #                new_box_pos[0] -= sim_param.obj_displacement   
 #    
-#    new_box_pos = [round(pos,sim_param.round_value+1) for pos in new_box_pos]
+#    new_box_pos = [round(pos,sim_param.round_value) for pos in new_box_pos]
 #    return obj_moved, new_box_pos
 
 '''

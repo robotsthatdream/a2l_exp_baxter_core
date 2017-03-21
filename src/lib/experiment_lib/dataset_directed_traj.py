@@ -216,9 +216,9 @@ def create_diverse_trajs(traj,
         zero_vector = [0,0,0]
         
         for traj_wp in traj:
-            orig_traj_x = round(traj_wp[0], sim_param.round_value+2)
-            orig_traj_y = round(traj_wp[1], sim_param.round_value+2)
-            orig_traj_z = round(traj_wp[2], sim_param.round_value+2)
+            orig_traj_x = round(traj_wp[0], sim_param.round_value)
+            orig_traj_y = round(traj_wp[1], sim_param.round_value)
+            orig_traj_z = round(traj_wp[2], sim_param.round_value)
                         
             ## eef pos
             tmp_traj += [orig_traj_x, orig_traj_y, orig_traj_z]
@@ -324,7 +324,7 @@ def generate_dataset(effect):
             
             var_x_vector = (linspace(eef_pos[0], mid_vax_x,
                             int(nb_steps/2))).tolist()
-            var_x_vector = [round(pos, sim_param.round_value+2) for pos in var_x_vector]
+            var_x_vector = [round(pos, sim_param.round_value) for pos in var_x_vector]
             var_x_vector_tmp = [mid_vax_x] + [mid_pos[0] for i in range(len(var_x_vector),nb_steps)][1:]    
             var_x_vector += var_x_vector_tmp
             
@@ -334,13 +334,13 @@ def generate_dataset(effect):
                 tmp_obj_pos = cube_pos
             var_y_vector = (linspace(eef_pos[1], mid_vax_y,
                             int(nb_steps/2))).tolist()
-            var_y_vector = [round(pos, sim_param.round_value+2) for pos in var_y_vector]
+            var_y_vector = [round(pos, sim_param.round_value) for pos in var_y_vector]
             var_y_vector_tmp = [mid_vax_y] + (linspace(mid_pos[1], tmp_obj_pos[1], int(nb_steps/2))).tolist()[1:]
             var_y_vector += var_y_vector_tmp
             
             var_z_vector = (linspace(eef_pos[2], mid_vax_z,
                             int(nb_steps/2))).tolist()
-            var_z_vector = [round(pos, sim_param.round_value+2) for pos in var_z_vector]
+            var_z_vector = [round(pos, sim_param.round_value) for pos in var_z_vector]
             var_z_vector_tmp = [mid_vax_z] + [mid_pos[2] for i in range(len(var_z_vector),nb_steps)][1:]
             var_z_vector += var_z_vector_tmp
             
@@ -353,7 +353,7 @@ def generate_dataset(effect):
                 
                 final_traj_sections_x = (linspace(traj[-1][0], cylinder_pos[0],
                                 int(nb_final_steps+1))).tolist()
-                final_traj_sections_x = [round(pos, sim_param.round_value+2) for pos in final_traj_sections_x]
+                final_traj_sections_x = [round(pos, sim_param.round_value) for pos in final_traj_sections_x]
                 final_traj_sections_y = nb_final_steps * [traj[-1][1]]
                 final_traj_sections_z = nb_final_steps * [traj[-1][2]]
                 for i in range(nb_final_steps):
@@ -379,7 +379,7 @@ def generate_dataset(effect):
             ''' Create main traj '''                   
             ## create noise and contact z
             noise = wp_change/2
-            z_contact = round(cube_pos[2] - cube_height/2, 2)
+            z_contact = round(cube_pos[2] - cube_height/2, sim_param.round_value)
 
             main_traj = [eef_pos]
 

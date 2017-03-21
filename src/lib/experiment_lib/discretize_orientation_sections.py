@@ -96,14 +96,15 @@ class Sections:
             pos += 1
 
     ''' Get the name of the discretized section for an angle '''
-    def get_section_angle(self,current_angle):            
+    def get_section_angle(self,current_angle):       
+        current_angle = round(current_angle, sim_param.round_value)
 
-        if (current_angle < self.orien_min_angle - sim_param.orien_offset or 
-            current_angle > self.orien_max_angle - sim_param.orien_offset):            
+        if (current_angle < round(self.orien_min_angle - sim_param.orien_offset, sim_param.round_value+1)  or 
+            current_angle > round(self.orien_max_angle - sim_param.orien_offset, sim_param.round_value+1) ):            
             print("ERROR - get_section_angle : The value", current_angle, \
                     "is out of the range [", 
-                    self.orien_min_angle - sim_param.orien_offset, ", ", \
-                    self.orien_max_angle - sim_param.orien_offset, "]")
+                    round(self.orien_min_angle - sim_param.orien_offset, sim_param.round_value), ", ", \
+                    round(self.orien_max_angle - sim_param.orien_offset, sim_param.round_value), "]")
             sys.exit()
 
         radian_values = self.sections_radians.values()

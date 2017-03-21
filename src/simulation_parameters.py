@@ -10,7 +10,7 @@ real_robot = False
 exec_traj = True
 new_dataset = False ## False to use the initial current dataset
 
-nb_min_init_pos = 1 ## better if mod 4
+nb_min_init_pos = 8 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
@@ -24,7 +24,7 @@ discr_random = False
 print_time = False ## print elapsed time for some functions
 plot_dataset_stats = True ## plot the content of the discretized dataset
 dpi = 300 
-round_value = 2
+round_value = 3
 effect_validation = 3 ## number of times a move in an axis must be > than 
                       ## in the other one to be accepted as effect
 
@@ -146,7 +146,7 @@ effect_values = ['left', 'right', 'close', 'far']
 #remote_far_boundary_value = 2 * obj_side
 #far_close_boundary_value = 1 * obj_side
 
-orien_offset = (2*math.pi/nb_min_orientation_sections)/2
+orien_offset = round((2*math.pi/nb_min_orientation_sections)/2,  round_value)
 #orien_min_angle = -math.pi + math.pi/2  + orien_offset
 #orien_max_angle = math.pi + math.pi/2 + orien_offset
 orien_min_angle = round(-math.pi + orien_offset, round_value)
@@ -160,7 +160,7 @@ perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 10
+nb_adapted_iterations = 5
 extend_max_trajs = 1
 extend_max_movs = random_max_movs/1
 nb_init_pos_for_adaption = nb_min_init_pos

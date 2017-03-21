@@ -28,11 +28,8 @@ import environment_setup as setup
 from mpl_toolkits.mplot3d import Axes3D
 from collections import OrderedDict
 import copy
-
-import rospy
-import baxter_interface   
     
-import scipy.spatial.distance as distance
+import scipy.spatial.distance as d
 from math import sqrt
 
 '''
@@ -89,7 +86,7 @@ OPi = x y z
 OOi = roll pitch yaw
 '''
 def read_dataset(filename):
-    mean_move_size = 0
+#    mean_move_size = 0
     nb_moves = 0
     delta_vector = []
     lines = open(filename, 'r').readlines()
@@ -118,8 +115,8 @@ def read_dataset(filename):
             next_y = float(pos_rot_vector[pos+related_info_size+1])
             next_z = float(pos_rot_vector[pos+related_info_size+2])
             
-            mean_move_size += d.euclidean([current_x, current_y, current_z],
-                                          [next_x, next_y, next_z])
+#            mean_move_size += d.euclidean([current_x, current_y, current_z],
+#                                          [next_x, next_y, next_z])
             nb_moves += 1
 
             current_next_obj_pos_vector = []
@@ -133,9 +130,11 @@ def read_dataset(filename):
                 next_obj_pos_y = float(pos_rot_vector[pos+related_info_size+6*curr_obj_id+1])
                 next_obj_pos_z = float(pos_rot_vector[pos+related_info_size+6*curr_obj_id+2])            
 
-                current_next_obj_pos = [current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
-                                        next_obj_pos_x, next_obj_pos_y, next_obj_pos_z]
-                current_next_obj_pos_vector.append(current_next_obj_pos)
+#                current_next_obj_pos = [current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
+#                                        next_obj_pos_x, next_obj_pos_y, next_obj_pos_z]
+#                current_next_obj_pos_vector.append(current_next_obj_pos)
+                current_next_obj_pos_vector += [current_obj_pos_x, current_obj_pos_y,current_obj_pos_z,
+                                                    next_obj_pos_x, next_obj_pos_y, next_obj_pos_z]
                 
             current_delta = delta.Delta(
                 obtained_effect,
@@ -146,8 +145,8 @@ def read_dataset(filename):
             current_delta_vector.append(current_delta)
         delta_vector += current_delta_vector
         
-    mean_move_size /= nb_moves
-    sim_param.step_length = round(mean_move_size, sim_param.round_value)
+#    mean_move_size /= nb_moves
+#    sim_param.step_length = round(mean_move_size, sim_param.round_value)
     print('Move step length:', sim_param.step_length)
     return delta_vector
 
@@ -248,7 +247,8 @@ def extend_dataset(current_dataset_stats,
                    current_nb_initial_pos, ## 8
                    learn_algo_vector,
                    perf_value_changes_vector, ## [0, 3, 1, 0])
-                   dataset_size):
+                   dataset_size,
+                   left_gripper_interface):
     
     for current_algo in learn_algo_vector:
         current_algo_stats_class = \
@@ -274,34 +274,47 @@ def extend_dataset(current_dataset_stats,
                 current_traj_res = current_traj_class.get_traj_res()
                 if current_traj_res != 'success':
                     actions_to_learn_vector.append(tmp_effect)
-            print('actions_to_learn_vector', actions_to_learn_vector)
             
-            for expected_effect in sim_param.effect_values:
-
-                current_traj_class = \
-                    current_trajs_dict[current_init_pos, expected_effect]
-                current_traj_res = current_traj_class.get_traj_res()
-
+            if len(actions_to_learn_vector) != len(sim_param.effect_values):
                 ## generate new trajs (deltas) based on previous contacts
-                if current_traj_res == 'success' or current_traj_res == 'false_pos':
-                    current_traj = \
-                        current_traj_class.get_eef_traj_vector()
-                    current_delta = \
-                        current_traj_class.get_delta_vector()                    
-                    current_new_delta_vector = \
-                        extend_trajectory(current_traj, 
-                                          current_delta,
-                                          current_nb_initial_pos,
-                                          current_init_pos, 
-                                          expected_effect,
-#                                          new_random_directed_trajs,
-                                          dataset_size,
-                                          current_trajs_dict,
-                                          actions_to_learn_vector)
-                    new_delta_vector += current_new_delta_vector                                         
-                    print('len new deltas', len(current_new_delta_vector),
-                          'init_pos - effect :',
-                          current_init_pos, expected_effect)                    
+                for expected_effect in sim_param.effect_values:
+                    print('actions_to_learn_vector', actions_to_learn_vector)
+                    
+                    current_traj_class = \
+                        current_trajs_dict[current_init_pos, expected_effect]
+                    current_traj_res = current_traj_class.get_traj_res()
+
+                    if current_traj_res == 'success' or current_traj_res == 'false_pos':
+                        current_traj = \
+                            current_traj_class.get_eef_traj_vector()
+                        current_delta = \
+                            current_traj_class.get_delta_vector()                    
+                        current_new_delta_vector, \
+                        actions_to_learn_vector = \
+                            extend_trajectory(current_traj, 
+                                              current_delta,
+                                              current_nb_initial_pos,
+                                              current_init_pos, 
+                                              expected_effect,
+                                              dataset_size,
+                                              current_trajs_dict,
+                                              actions_to_learn_vector,
+                                              left_gripper_interface)
+                        new_delta_vector += current_new_delta_vector                                         
+                        print('len new deltas', len(current_new_delta_vector),
+                              'init_pos - effect :',
+                              current_init_pos, expected_effect)
+            else:
+                ## generate new random trajs for the init pos
+                print('---------> Babbling for init_pos :', current_init_pos)
+                current_new_delta_vector = dr.create_discr_trajs(sim_param.nb_min_init_pos, ## nb init pos
+                                                                 left_gripper_interface,
+                                                                 write_dataset_bool = False,
+                                                                 single_init_pos = True,
+                                                                 single_pos = current_init_pos)
+                new_delta_vector += current_new_delta_vector
+                print('len new deltas', len(current_new_delta_vector))
+                
                                               
     print('Total delta extension :', len(new_delta_vector))
     return new_delta_vector, new_random_directed_trajs_vector
@@ -317,11 +330,21 @@ def extend_trajectory(current_traj_vector, ## [WPs]
 #                      new_random_directed_trajs, ## bool
                       dataset_size,
                       current_trajs_dict,
-                      actions_to_learn_vector):            
+                      actions_to_learn_vector,
+                      left_gripper_interface):            
 
     print('\n\n------------------->', current_init_pos, expected_effect)
 
-    initial_obj_pos = current_delta_vector[0].get_obj_init(0)
+    ## move arm up
+    eef_pos = ros_services.call_get_eef_pose('left')
+    eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
+    pos_up = copy.copy(eef_pos)
+    pos_up[2] += 0.2
+    success = ros_services.call_move_to_initial_position(pos_up) 
+    if not success:
+        print("ERROR - extend dataset failed")
+
+    initial_obj_pos = current_delta_vector[0].get_obj_init()
     init_eef_pos = [current_delta_vector[0].get_wp_init().get_x(),
                     current_delta_vector[0].get_wp_init().get_y(),
                     current_delta_vector[0].get_wp_init().get_z()]
@@ -330,39 +353,20 @@ def extend_trajectory(current_traj_vector, ## [WPs]
     success = ros_services.call_restart_world("object",
                                               sim_param.obj_name_vector[0],
                                               initial_obj_pos)    
-                          
     step_length = sim_param.step_length
     new_delta_trajs_vector = []
-    nb_trajs_found = 0    
-
-    ## load eef interface
-    rospy.init_node('left_gripper_node')
-    left_gripper = baxter_interface.Gripper('left')
-    rospy.sleep(1)    
+    nb_trajs_found = 0        
     
     ''' generate max N new trajs '''
     thrs = sim_param.obj_moved_threshold
     nb_new_traj = 0
-#    sim_obtained_effect = ''
     counter = 0    
     while nb_new_traj < sim_param.extend_max_trajs and counter < 10000:
         ## for (almost) each WP of the traj        
         curr_wp = 1
-#        print('nb_new_traj', nb_new_traj)
-        
-#        if counter % 30 == 0 or counter % 50 == 0:
-#            print('counter', counter)
             
         ''' For each WP '''
-        while curr_wp < len(current_traj_vector):
-#            print('curr_wp', curr_wp)
-            
-#            ''' Get all object pos'''
-#            obj_pos_dict = OrderedDict()
-#            for obj_name in sim_param.obj_name_vector:
-#                obj_pos = ros_services.call_get_model_state(obj_name)
-#                obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
-#                obj_pos_dict[obj_name] = obj_pos                            
+        while curr_wp < len(current_traj_vector):                     
             
             ## new tmp traj from the beginning to this WP            
             tmp_traj = current_traj_vector[:-curr_wp]
@@ -388,7 +392,10 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                 
                 if sim_param.semi_random_trajs:
                     var_x = random.choice([-step_length, 0, step_length])
-                    var_y = random.choice([-step_length, 0, step_length])
+                    if var_x != 0:
+                        var_y = 0
+                    else:
+                        var_y = random.choice([-step_length, 0, step_length])
 #                    new_z = round(current_z + random.choice(step_options), sim_param.round_value)
                 else:
                     var_x = random.uniform(-step_length/2,step_length/2)
@@ -405,6 +412,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                         dims_vector += 1
                 if dims_vector == 0:
                     dims_vector = 1
+                dims_vector = 1
                 var_vector = [round(value/sqrt(dims_vector), sim_param.round_value)
                                 for value in var_vector]                                                
                 new_x = round(current_x + var_vector[0], sim_param.round_value)
@@ -417,11 +425,18 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                 traj_vector_y.append(new_y)
                 traj_vector_z.append(new_z)
                 
+#                print("\nDelta :", var_vector[0], var_vector[1],
+#                      'Norm:', round(d.euclidean([0, 0],
+#                                                 [var_vector[0], var_vector[1]]), 3))
+#                print('Previous EEF pos :', 
+#                      current_x, current_y, current_z)
+#                print('New EEF pos :', 
+#                      new_x, new_y, new_z)
+                
                 ## compute new box pos
                 sim_initial_obj_pos = initial_obj_pos #obj_pos_dict['cube']
                 sim_obj_moved, sim_final_obj_pos = \
-                    env.compute_obj_pos(
-                                        sim_initial_obj_pos,
+                    env.compute_obj_pos(sim_initial_obj_pos,
                                         [current_x,current_y,current_z],
                                         [new_x, new_y, new_z])
                         
@@ -439,26 +454,27 @@ def extend_trajectory(current_traj_vector, ## [WPs]
             curr_wp += 1
             
             if sim_obj_moved:
-                ## replicate last move
-                traj_vector_x.append(round(new_x + var_x, sim_param.round_value))
-                traj_vector_y.append(round(new_y + var_y, sim_param.round_value))
-                traj_vector_z.append(new_z)
-                
-                replicated_delta = delta.Delta(
-                    '',
-                    new_x, new_y, new_z,
-                    new_x + var_x, new_y + var_y, new_z,
-                    [sim_initial_obj_pos[0], sim_initial_obj_pos[1], sim_initial_obj_pos[2],
-                     sim_final_obj_pos[0], sim_final_obj_pos[1], sim_final_obj_pos[2]])                                
-                extended_delta_vector.append(replicated_delta)                
-                nb_new_delta += 1
-                
+                if var_x == 0 or var_y == 0 : 
+                    ## replicate last move
+                    traj_vector_x.append(round(new_x + var_x, sim_param.round_value))
+                    traj_vector_y.append(round(new_y + var_y, sim_param.round_value))
+                    traj_vector_z.append(new_z)
+                    
+                    replicated_delta = delta.Delta(
+                        '',
+                        new_x, new_y, new_z,
+                        new_x + var_x, new_y + var_y, new_z,
+                        [sim_initial_obj_pos[0], sim_initial_obj_pos[1], sim_initial_obj_pos[2],
+                         sim_final_obj_pos[0], sim_final_obj_pos[1], sim_final_obj_pos[2]])                                
+                    extended_delta_vector.append(replicated_delta)                
+                    nb_new_delta += 1
+                    
                 ## compute related effect
                 sim_obtained_effect = discr.compute_effect(sim_initial_obj_pos,
                                                            sim_final_obj_pos)
                 print('\nsim_obtained_effect', sim_obtained_effect)                                                           
                 
-                if sim_obtained_effect in actions_to_learn_vector:
+                if sim_obtained_effect in actions_to_learn_vector:                    
                     print('--> real - extending for', current_init_pos, sim_obtained_effect) 
                     
                     ## print simulated extended traj
@@ -477,7 +493,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                         print("ERROR - call_move_to_initial_position failed")                                   
                     eef_pos = ros_services.call_get_eef_pose('left')
                     eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
-                    left_gripper.close()
+                    left_gripper_interface.close()
     
                     real_initial_obj_pos = initial_obj_pos #obj_pos_dict["cube"]
                     
@@ -491,7 +507,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                     ''' Get object pos'''
                     obj_pos_dict = OrderedDict()
                     obj_pos = ros_services.call_get_model_state("cube")
-                    obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]                    
+                    obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]                    
                     obj_pos_dict["cube"] = obj_pos
                     real_final_obj_pos = obj_pos
     
@@ -528,8 +544,13 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                                 
                                 for dd in extended_delta_vector:
                                     dd.set_effect(real_obtained_effect)
+#                                    dd.print_me()
                                     
                                 new_delta_trajs_vector += extended_delta_vector
+                            
+                            ## stop looking for trajs for this init_pos effect
+                            actions_to_learn_vector = [effect for effect in actions_to_learn_vector
+                                                                    if effect != real_obtained_effect]
     
                     ## move arm up
                     eef_pos = ros_services.call_get_eef_pose('left')
@@ -538,7 +559,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                     pos_up[2] += 0.2
                     success = ros_services.call_move_to_initial_position(pos_up) 
                     if not success:
-                        print("ERROR - call_move_to_initial_position failed")
+                        print("ERROR - extend dataset failed")
                     
                     ## compute new obj pos
     #                new_obj_pos = sim_param.first_obj_pos
@@ -564,7 +585,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
     
     print(nb_trajs_found, "new trajs found")
     
-    return new_delta_trajs_vector
+    return new_delta_trajs_vector, actions_to_learn_vector
     
 '''
 if there is NOT success for the inference of a (init_pos, effect) then

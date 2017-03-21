@@ -11,7 +11,7 @@ lib_exp_path = os.path.realpath(os.path.abspath(os.path.join('.', 'lib', 'experi
 sys.path.append(lib_exp_path)
 import dataset_generation as dataset
 import discretize as discr
-import inference_ros as infer_ros
+import validation as validation
 import learning as ln
 import simulation_parameters as sim_param
 import inf_traj_series_dataset_classes as dataset_series_classes
@@ -26,7 +26,8 @@ def basic_learning_dataset_size(dataset_type_vector,
                                 learn_algo_vector,
                                 current_results_folder,
                                 current_generated_files_folder,
-                                current_plot_folder):
+                                current_plot_folder,
+                                left_gripper_interface):
           
     ## Create discretizations
     current_orien_discr = discr.compute_orientation_discr()
@@ -84,19 +85,13 @@ def basic_learning_dataset_size(dataset_type_vector,
             
         ## Read available raw delta dataset (only random)
         elif dataset_type == 'random':
-            raw_deltas_dataset_filename = sim_param.generated_datasets_folder + 'random_dataset_deltas.csv'
-            raw_delta_vector = dataset.read_delta_dataset(raw_deltas_dataset_filename)
+#            raw_deltas_dataset_filename = sim_param.generated_datasets_folder + 'random_dataset_deltas.csv'
+#            raw_delta_vector = dataset.read_delta_dataset(raw_deltas_dataset_filename)
+            raw_delta_vector = dataset.read_dataset(raw_dataset_filename)
         else:
             print('ERROR - main - wrong dataset_type value')
         
-        ## discretize dataset
-        if dataset_type == 'directed':
-            discr_dataset_filename = current_generated_files_folder + 'directed_discr_wps_initial.csv'
-        elif dataset_type == 'random':
-            discr_dataset_filename = current_generated_files_folder + 'random_discr_wps_initial.csv'
-        else:
-            print('ERROR - main - wrong dataset_type value')
-            
+        ## discretize dataset            
         discr_delta_vector = discr.discretize_trajs(
                                     raw_delta_vector,
                                     current_orien_discr,
@@ -113,6 +108,12 @@ def basic_learning_dataset_size(dataset_type_vector,
                 print(nb_removed,'very small movements were removed')                        
         
         ## store discretized dataset
+        if dataset_type == 'directed':
+            discr_dataset_filename = current_generated_files_folder + 'directed_discr_wps_initial.csv'
+        elif dataset_type == 'random':
+            discr_dataset_filename = current_generated_files_folder + 'random_discr_wps_initial.csv'
+        else:
+            print('ERROR - main - wrong dataset_type value')        
         discr.save_discr_deltas(discr_dataset_filename, discr_delta_vector)
         
         ## plot hard-coded discretized dataset stats
@@ -135,7 +136,7 @@ def basic_learning_dataset_size(dataset_type_vector,
             if sim_param.print_time:
                 t = time.process_time()
             bn = ln.learn_bn(discr_dataset_filename, current_algo)
-            bn_url = 'BN_' + dataset_type + '_' + current_algo + '.bif'                
+            bn_url = 'BN_' + dataset_type + '_initial_' + current_algo  + '.bif'                
             ln.save_bn(bn, 
                        current_generated_files_folder + bn_url)                           
             if sim_param.print_time:
@@ -157,7 +158,7 @@ def basic_learning_dataset_size(dataset_type_vector,
                 
             while curr_nb_infere_trajs < max_nb_infere_trajs:                                    
                 ## validate affordance knowledge                                
-                infer_ros.infere_trajectories(
+                validation.affordance_validation(
                     current_results_folder,
                     bn, 
                     current_algo,
@@ -167,7 +168,8 @@ def basic_learning_dataset_size(dataset_type_vector,
                     curr_nb_infere_trajs,
                     current_orien_discr,
                     current_inclin_discr,
-                    current_dist_discr)
+                    current_dist_discr,
+                    left_gripper_interface)
                 curr_nb_infere_trajs += 1
                                            
             ## Store stats and move's mean prob                 
@@ -202,7 +204,8 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                     current_iteration,
                                     previous_raw_delta_vector,
                                     perf_value_changes_vector,
-                                    prev_inferred_discr_delta_vector):
+                                    prev_inferred_discr_delta_vector,
+                                    left_gripper_interface):
     
     ''' Extend dataset '''    
     dataset_stats_vector = [] 
@@ -231,7 +234,8 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
             sim_param.nb_init_pos_for_adaption,
             learn_algo_vector,
             perf_value_changes_vector,
-            len(previous_raw_delta_vector))
+            len(previous_raw_delta_vector),
+            left_gripper_interface)
     
     extended_raw_delta_vector = previous_raw_delta_vector + \
                                 new_raw_delta_vector
@@ -243,7 +247,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                 current_orien_discr,
                                 current_inclin_discr,
                                 current_dist_discr)
-    discr_delta_vector = discr_delta_vector ## + prev_inferred_discr_delta_vector
+#    discr_delta_vector = discr_delta_vector ## + prev_inferred_discr_delta_vector
     
     ## remove small moves
     nb_removed = 0
@@ -272,7 +276,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                                
         ## Learn BN
         bn = ln.learn_bn(discr_dataset_filename, current_algo)
-        bn_url = 'BN_' + current_dataset_name + '_' + current_algo + '.bif'                
+        bn_url = 'BN_' + current_dataset_name + '_' + str(current_iteration)  + '_' + current_algo + '.bif'                
         ln.save_bn(bn, 
                    current_generated_files_folder + bn_url)                           
 
@@ -287,7 +291,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         dataset_size_class = \
             dataset_series_classes.Dataset_size_results(current_nb_initial_pos)        
         tmp_inferred_discr_delta_vector = \
-            infer_ros.infere_trajectories(
+            validation.affordance_validation(
                 current_results_folder,
                 bn, 
                 current_algo,
@@ -297,7 +301,8 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
                 current_iteration,
                 current_orien_discr,
                 current_inclin_discr,
-                current_dist_discr)
+                current_dist_discr,
+                left_gripper_interface)
         if len(tmp_inferred_discr_delta_vector) > 0:
             print(current_algo, len(tmp_inferred_discr_delta_vector))
             inferred_discr_delta_vector = inferred_discr_delta_vector +\
@@ -307,7 +312,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         extended_algo_stats_class = \
             extended_dataset_stats.get_algo_results(current_algo)                
         extended_algo_stats_class.add_result(current_nb_initial_pos,
-                                            dataset_size_class)
+                                             dataset_size_class)
                                            
         if sim_param.debug:
             extended_algo_stats_class.print_me()

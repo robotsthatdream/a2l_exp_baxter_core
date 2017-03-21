@@ -33,7 +33,7 @@ def create_discr_trajs(nb_initial_pos,
     obj_pos_dict = OrderedDict()
     for obj_name in sim_param.obj_name_vector:
         obj_pos = ros_services.call_get_model_state(obj_name)
-        obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
+        obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
         obj_pos_dict[obj_name] = obj_pos
 
     

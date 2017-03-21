@@ -69,8 +69,8 @@ Given a final position identify the effect
 Real coordinates
 '''
 def compute_effect(initial_obj_pos, final_obj_pos):
-    delta_x = abs(final_obj_pos[0] - initial_obj_pos[0])
-    delta_y = abs(final_obj_pos[1] - initial_obj_pos[1])
+    delta_x = round(abs(final_obj_pos[0] - initial_obj_pos[0]), sim_param.round_value)
+    delta_y = round(abs(final_obj_pos[1] - initial_obj_pos[1]), sim_param.round_value)
     
     if delta_x == 0 and delta_y == 0:
 #        print('ERROR - compute_effect :', 
@@ -83,6 +83,8 @@ def compute_effect(initial_obj_pos, final_obj_pos):
                 return 'far'
             elif final_obj_pos[0] < initial_obj_pos[0] :    
                 return 'close'
+            else:
+                return ''
         elif delta_x*sim_param.effect_validation < delta_y: ## left or right
             if final_obj_pos[1] > initial_obj_pos[1] :
                 return 'left'
@@ -90,6 +92,9 @@ def compute_effect(initial_obj_pos, final_obj_pos):
                 return 'right'
             else:
                 return ''
+        else:
+            return ''
+            
 
     
 '''

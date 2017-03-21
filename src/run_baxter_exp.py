@@ -25,6 +25,9 @@ import inference_ros as infer_ros
 import iteration_classes as iter_class
 import ros_services
 
+import rospy
+import baxter_interface 
+
 '''
 Print current experiment parameters
 '''
@@ -147,8 +150,8 @@ if __name__ == "__main__":
 #    dataset_type_vector = ['directed', 'random']
 
 #    learn_algo_vector = ['hard-coded', 'hillclimbing', 'k2']    
-#    learn_algo_vector = ['hillclimbing']
-    learn_algo_vector = ['hard-coded']
+    learn_algo_vector = ['hillclimbing']
+#    learn_algo_vector = ['hard-coded']
 #    learn_algo_vector = ['hard-coded', 'hillclimbing']    
 
     ''' Create folders '''
@@ -157,6 +160,11 @@ if __name__ == "__main__":
 
     ''' Update number of initial positions in ROS '''
     ros_services.update_nb_init_pos()
+    
+    ''' Load eef interface to close gripper'''
+    rospy.init_node('left_gripper_node', anonymous=True)
+    left_gripper_interface = baxter_interface.Gripper('left')
+#    rospy.sleep(1)
     
     ''' Restart scenario if box is not in init position '''
     obj_pos_dict = OrderedDict()
@@ -231,7 +239,8 @@ if __name__ == "__main__":
                 learn_algo_vector,
                 current_results_folder,
                 current_generated_files_folder,
-                current_plot_folder)
+                current_plot_folder,
+                left_gripper_interface)
 
         if sim_param.experiment_type == 'a2l_dataset_extension':
             
@@ -383,7 +392,8 @@ if __name__ == "__main__":
                         nb_iter,
                         previous_iter_raw_delta_vector,
                         perf_value_changes_vector,
-                        inferred_discr_delta_vector)
+                        inferred_discr_delta_vector,
+                        left_gripper_interface)
 
                 ''' Compute score '''
                 current_iter_dataset_stats_class = current_iter_dataset_stats_class_stats_vector[0]
@@ -460,7 +470,7 @@ if __name__ == "__main__":
                                 iterations_dict,
                                 sim_param.nb_init_pos_for_adaption,
                                 current_algo,
-                                nb_iter + 1,
+                                nb_iter+1,
                                 current_plot_folder)
                 else :
                     print('\nTemporal new raw entries', 
@@ -496,7 +506,7 @@ if __name__ == "__main__":
                     iterations_dict,
                     sim_param.nb_init_pos_for_adaption,
                     current_algo,
-                    nb_iter + 1,
+                    nb_iter+1,
                     current_plot_folder)
                     
             ## plot last dataset generated

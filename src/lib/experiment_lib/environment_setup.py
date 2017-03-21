@@ -45,8 +45,8 @@ def gen_init_eef(nb_init_pos,
 Generate random pos of the object
 '''
 def gen_obj_pos():
-    obj_pos = [round(random.uniform(-0.5,0.5),2),
-               round(random.uniform(-0.5,0.5),2),
+    obj_pos = [round(random.uniform(-0.5,0.5),sim_param.round_value),
+               round(random.uniform(-0.5,0.5),sim_param.round_value),
                 -0.11]
     return obj_pos
 

@@ -25,6 +25,7 @@ from collections import OrderedDict
 import rospy
 import baxter_interface
 from scipy.spatial import distance
+from math import sqrt
 
 def plot_setup(obj_vector,
                init_pos_vector):
@@ -168,7 +169,9 @@ def write_dataset(traj_vector,
 '''
 Generate random trajs from each initial position
 '''
-def create_discr_trajs(nb_initial_pos, 
+def create_discr_trajs(nb_initial_pos,
+                       left_gripper_interface,
+                       write_dataset_bool = True,
                        single_init_pos = False,
                        single_pos = 0):
 
@@ -180,7 +183,7 @@ def create_discr_trajs(nb_initial_pos,
     ''' Generate the trajs '''
     it = 0
     step_length = sim_param.step_length
-    step_options = [-step_length, 0, step_length]
+#    step_options = [-step_length, 0, step_length]
     nb_max_box_touched_found = False
     nb_box_touched = 0
     delta_vector = []
@@ -190,11 +193,6 @@ def create_discr_trajs(nb_initial_pos,
         init_pos_range = range(0,sim_param.nb_min_init_pos)
     else: ## if single_init_pos only generate trajs in pos single_pos
         init_pos_range = range(single_pos, single_pos + 1)
-    
-    ## load eef interface
-    rospy.init_node('left_gripper_node')
-    left_gripper = baxter_interface.Gripper('left')
-    rospy.sleep(1)
     
     thrs = sim_param.obj_moved_threshold
     traj_vector = []
@@ -207,7 +205,7 @@ def create_discr_trajs(nb_initial_pos,
             ''' Get object pos'''
             obj_pos_dict = OrderedDict()
             obj_pos = ros_services.call_get_model_state("cube")
-            obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]
+            obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]
             obj_pos_dict["cube"] = obj_pos
             
             ''' Big circle '''      
@@ -216,13 +214,12 @@ def create_discr_trajs(nb_initial_pos,
                                    sim_param.radio,
                                    obj_pos_dict[sim_param.obj_name_vector[0]])                                                                      
                                    
-#            if __name__ == '__main__':
-#                ax = plot_setup([obj_pos_dict["cube"]],
-#                                [list_x_axis, 
-#                                 list_y_axis, 
-#                                 list_z_axis])
-#                ax.view_init(90,180) # top view                                   
-
+            if __name__ == '__main__':
+                ax = plot_setup([obj_pos_dict["cube"]],
+                                [list_x_axis, 
+                                 list_y_axis, 
+                                 list_z_axis])
+                ax.view_init(90,0) # top view
 
             ## compute each step of the trajectory, called delta
             x_i = [list_x_axis[curr_init_pos]]
@@ -248,14 +245,43 @@ def create_discr_trajs(nb_initial_pos,
                 current_x = x_i[-1]
                 current_y = y_i[-1]
                 current_z = z_i[-1]
+#                if sim_param.semi_random_trajs:
+#                    new_x = round(current_x + random.choice(step_options), sim_param.round_value)
+#                    new_y = round(current_y + random.choice(step_options), sim_param.round_value)
+##                    new_z = current_z + random.choice(step_options)
+#                else:
+#                    new_x = round(current_x + random.uniform(-step_length,step_length), sim_param.round_value)
+#                    new_y = round(current_y + random.uniform(-step_length,step_length), sim_param.round_value)
+##                    new_z = current_z + random.uniform(-step_length,step_length)   
+                
                 if sim_param.semi_random_trajs:
-                    new_x = round(current_x + random.choice(step_options), sim_param.round_value)
-                    new_y = round(current_y + random.choice(step_options), sim_param.round_value)
-#                    new_z = current_z + random.choice(step_options)
+                    var_x = random.choice([-step_length, 0, step_length])
+                    if var_x != 0:
+                        var_y = 0
+                    else:
+                        var_y = random.choice([-step_length, 0, step_length])
+#                    new_z = round(current_z + random.choice(step_options), sim_param.round_value)
                 else:
-                    new_x = round(current_x + random.uniform(-step_length,step_length), sim_param.round_value)
-                    new_y = round(current_y + random.uniform(-step_length,step_length), sim_param.round_value)
-#                    new_z = current_z + random.uniform(-step_length,step_length)   
+                    var_x = random.uniform(-step_length/2,step_length/2)
+                    var_y = random.uniform(-step_length/2,step_length/2)
+#                    new_z = round(current_z + random.uniform(-step_length,step_length), sim_param.round_value)
+#                new_x = round(current_x + var_x, sim_param.round_value)
+#                new_y = round(current_y + var_y, sim_param.round_value)
+                    
+                ## normalize mov size
+                var_vector = [var_x, var_y]
+                dims_vector = 0               
+                for value in var_vector:
+                    if value != 0:                    
+                        dims_vector += 1
+                if dims_vector == 0:
+                    dims_vector = 1
+                dims_vector = 1
+                var_vector = [round(value/sqrt(dims_vector), sim_param.round_value)
+                                for value in var_vector]                         
+#                print(var_vector)                               
+                new_x = round(current_x + var_vector[0], sim_param.round_value)
+                new_y = round(current_y + var_vector[1], sim_param.round_value)                 
                 
                 
                 ############################################################################## TODO OJO !!!
@@ -284,7 +310,7 @@ def create_discr_trajs(nb_initial_pos,
                     current_y != new_y:         
                     
                     current_delta = delta.Delta(
-                                sim_obj_moved,
+                                real_effect,
                                 current_x,current_y,current_z,
                                 new_x, new_y, new_z,
                                 [obj_pos_dict["cube"][0], 
@@ -306,7 +332,7 @@ def create_discr_trajs(nb_initial_pos,
                         print("ERROR - call_move_to_initial_position failed")                                   
                     eef_pos = ros_services.call_get_eef_pose('left')
                     eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
-                    left_gripper.close()
+                    left_gripper_interface.close()
 
                     initial_obj_pos = obj_pos_dict["cube"]
                     
@@ -314,11 +340,11 @@ def create_discr_trajs(nb_initial_pos,
                     simulated_traj = zip(x_i, y_i, z_i)
                     simulated_traj_vector = [i for el in simulated_traj for i in el] ## [float]
                     res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-                                                               simulated_traj_vector)
+                                                                   simulated_traj_vector)
                     ''' Get object pos'''
                     obj_pos_dict = OrderedDict()
                     obj_pos = ros_services.call_get_model_state("cube")
-                    obj_pos = [round(pos, sim_param.round_value+1) for pos in obj_pos[0:3]]                    
+                    obj_pos = [round(pos, sim_param.round_value) for pos in obj_pos[0:3]]                    
                     obj_pos_dict["cube"] = obj_pos
                     real_final_obj_pos = obj_pos
 
@@ -333,29 +359,38 @@ def create_discr_trajs(nb_initial_pos,
                                                            real_final_obj_pos)                                                                                                       
                         print("real_effect", real_effect)
                         
-                        if real_effect != '':
+                        if real_effect != '' and real_effect != None:
                             ## stop generating wps if max trajs inferred
                             nb_box_touched += 1
                             print('nb_box_touched', nb_box_touched)
+                            if single_init_pos:
+                                tmp_nb_box_touched = 1
+                            else:
+                                tmp_nb_box_touched = nb_initial_pos
                             if nb_box_touched == \
-                                nb_initial_pos * len(sim_param.effect_values) * 1:
+                                tmp_nb_box_touched * len(sim_param.effect_values) * 1:
                                 nb_max_box_touched_found = True
                                 
                             ## print traj
                             if __name__ == "__main__" and sim_obj_moved:
-                                ax = plot_setup([initial_obj_pos],
-                                                [list_x_axis, 
-                                                 list_y_axis, 
-                                                 list_z_axis])             
+#                                ax = plot_setup([initial_obj_pos],
+#                                                [list_x_axis, 
+#                                                 list_y_axis, 
+#                                                 list_z_axis])             
                             
-                            ax.plot(x_i, y_i, z_i, '-')
-                            ax.plot(x_i, y_i, z_i, '*', c='grey')    
+                                ax.plot(x_i, y_i, z_i,
+                                        '-',
+                                        linewidth = 8)
+                                ax.plot(x_i, y_i, z_i, '*', c='grey')    
                             
                             for d in current_delta_vector:
                                 d.set_effect(real_effect)
                             
                             delta_vector = delta_vector + current_delta_vector
                             traj_vector.append(wp_vector)
+                            
+#                            for ddd in current_delta_vector:
+#                                ddd.print_me()
                         
                             ## update cube pos
                             if distance.euclidean(real_final_obj_pos, 
@@ -377,17 +412,17 @@ def create_discr_trajs(nb_initial_pos,
                                                                           sim_param.obj_name_vector[0],
                                                                           new_obj_pos)                        
                                 if not success:
-                                    print("ERROR - restart_world failed for object", sim_param.obj_name_vector[0])                         
-                    
-                nb_delta += 1                
+                                    print("ERROR - restart_world failed for object", sim_param.obj_name_vector[0])   
+                nb_delta += 1
+                plt.close()
         it += 1
 
     if __name__ == "__main__":
         plt.show()
         
-#    if write_dataset_bool:
-    write_dataset(traj_vector,
-                  delta_vector)
+    if write_dataset_bool:
+        write_dataset(traj_vector,
+                      delta_vector)
     
     return delta_vector
     
@@ -397,7 +432,14 @@ Test
 #if sim_param.test_random_dataset:
 if __name__ == "__main__":
 #    write_dataset_bool = True
+
+#    ## load eef interface
+#    rospy.init_node('left_gripper_node', anonymous=True)
+#    left_gripper_interface = baxter_interface.Gripper('left')
+#    rospy.sleep(1)
     
-    create_discr_trajs(sim_param.nb_min_init_pos, 
+    create_discr_trajs(sim_param.nb_min_init_pos,
+                       left_gripper_interface,
+                       True, ## write file
                        False, ## single_init_pos ?
                        2) ## single_pos
