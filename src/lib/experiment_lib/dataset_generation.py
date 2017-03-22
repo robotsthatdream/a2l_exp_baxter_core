@@ -472,9 +472,9 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                 ## compute related effect
                 sim_obtained_effect = discr.compute_effect(sim_initial_obj_pos,
                                                            sim_final_obj_pos)
-                print('\nsim_obtained_effect', sim_obtained_effect)                                                           
-                
-                if sim_obtained_effect in actions_to_learn_vector:                    
+                                                                           
+                if sim_obtained_effect in actions_to_learn_vector:    
+                    print('\nsim_obtained_effect', sim_obtained_effect)
                     print('--> real - extending for', current_init_pos, sim_obtained_effect) 
                     
                     ## print simulated extended traj

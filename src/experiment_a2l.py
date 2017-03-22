@@ -195,7 +195,6 @@ Run adaptive learning
 def adaptive_learning_dataset_size(current_dataset_stats, ## random
                                     current_nb_initial_pos, ## 8
                                     learn_algo_vector,
-#                                    current_obj_pos,
                                     current_results_folder,
                                     current_generated_files_folder,
                                     current_orien_discr,
@@ -239,30 +238,34 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
     
     extended_raw_delta_vector = previous_raw_delta_vector + \
                                 new_raw_delta_vector
-    print('Num TOTAL deltas:', len(extended_raw_delta_vector))
+    print('Num RAW deltas before extension:', len(previous_raw_delta_vector))
+    print('Num RAW deltas after extension:', len(extended_raw_delta_vector))
     
     ## discretize dataset
-    discr_delta_vector = discr.discretize_trajs(
+    
+    extended_discr_delta_vector = discr.discretize_trajs(
                                 extended_raw_delta_vector,
                                 current_orien_discr,
                                 current_inclin_discr,
                                 current_dist_discr)
-#    discr_delta_vector = discr_delta_vector ## + prev_inferred_discr_delta_vector
+    print('Num DISCRETE deltas after extension:', len(extended_discr_delta_vector)) 
+#    extended_discr_delta_vector = extended_discr_delta_vector ## + prev_inferred_extended_discr_delta_vector
     
     ## remove small moves
     nb_removed = 0
-    for discr_delta in discr_delta_vector:
+    for discr_delta in extended_discr_delta_vector:
         if discr_delta[3] == 'zero':
-            discr_delta_vector.remove(discr_delta)
+            extended_discr_delta_vector.remove(discr_delta)
             nb_removed += 1
     if nb_removed > 0:
-        print(nb_removed,'very small movements were removed')                        
+        print(nb_removed,'very small movements were removed')
+        print('Num DISCRETE deltas after extension after ZEROS:', len(extended_discr_delta_vector))                       
     
     ## store discretized dataset
     discr_dataset_filename = current_generated_files_folder + \
                 'random_discr_wps_iteration_' + str(current_iteration) + '.csv'
     discr.save_discr_deltas(discr_dataset_filename, 
-                            discr_delta_vector)                
+                            extended_discr_delta_vector)                
     
     inferred_discr_delta_vector = []
     for current_algo in learn_algo_vector:            

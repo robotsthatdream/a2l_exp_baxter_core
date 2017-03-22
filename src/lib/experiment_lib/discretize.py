@@ -91,10 +91,12 @@ def discretize_trajs(delta_vector,
                          
     discr_dataset_vector = []
     nb_delta = 0
-    while nb_delta < len(delta_vector)-1:
-        current_delta = delta_vector[nb_delta]
+#    while nb_delta < len(delta_vector)-1:
+#        current_delta = delta_vector[nb_delta]
+    for current_delta in delta_vector:
 #        print('\n\nnb_delta', nb_delta)        
 #        current_delta.print_me()
+
 
         
         ''' Compute move '''

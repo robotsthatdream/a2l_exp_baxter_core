@@ -473,13 +473,14 @@ if __name__ == "__main__":
                                 nb_iter+1,
                                 current_plot_folder)
                 else :
-                    print('\nTemporal new raw entries', 
+                    print('\nTemporal new raw entries discarded', 
                           len(current_iter_raw_delta_vector) - 
                           len(previous_iter_raw_delta_vector))
                 
                 print("\nRaw dataset size after iteration", nb_iter,
                       'is', len(previous_iter_raw_delta_vector))
-                    
+            
+            ###### AFTER ITERATIONS                    
             ''' Plot stats for new dataset '''
             if sim_param.plot_stats:        
                 for current_dataset_stat in current_iter_dataset_stats_class_perf_value_vector:

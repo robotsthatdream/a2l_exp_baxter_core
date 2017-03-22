@@ -10,7 +10,7 @@ real_robot = False
 exec_traj = True
 new_dataset = False ## False to use the initial current dataset
 
-nb_min_init_pos = 8 ## better if mod 4
+nb_min_init_pos = 1 ## better if mod 4
 nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
