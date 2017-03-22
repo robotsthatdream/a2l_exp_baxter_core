@@ -74,46 +74,77 @@ def compute_effect(initial_obj_pos, final_obj_pos):
     delta_x = round(final_obj_pos[0] - initial_obj_pos[0], sim_param.round_value)
     delta_y = round(final_obj_pos[1] - initial_obj_pos[1], sim_param.round_value)
     
-    if delta_y > 0:
-        print('\ndiff', abs(round(delta_x/delta_y)))
-    
     if delta_x == 0 and delta_y == 0:
 #        print('ERROR - compute_effect :', 
 #              initial_obj_pos,
 #              final_obj_pos)
         return ''
-    else:     
-        if delta_x > sim_param.effect_validation*delta_y: ## far or close
-            if final_obj_pos[0] > initial_obj_pos[0] :
-                return 'far'
-            elif final_obj_pos[0] < initial_obj_pos[0] :    
-                return 'close'
-            else:
-                return ''
+        
+    else:
+        diag = sim_param.effect_diagonal
+        if delta_x > 0: ## far or left or right or far_left or far_right
+            
+            if delta_y > 0: ## far or left or far_left
                 
-        elif delta_x*sim_param.effect_validation < delta_y: ## left or right
-            if final_obj_pos[1] > initial_obj_pos[1] :
-                return 'left'
-            elif final_obj_pos[1] < initial_obj_pos[1] :
+                if delta_y == 0 or abs(delta_x) > abs(sim_param.effect_validation*delta_y):
+                    return 'far'
+                elif delta_x == 0 or abs(delta_y) > abs(sim_param.effect_validation*delta_x):
+                    return 'left'
+                elif round(abs(delta_x)/abs(delta_y), sim_param.round_value) > diag: ## diagonal
+                    return 'far_left'
+                else:
+                    return ''
+                    
+            elif delta_y < 0: ## far or right or far_right
+                
+                if delta_y == 0 or abs(delta_x) > abs(sim_param.effect_validation*delta_y):
+                    return 'far'
+                elif delta_x == 0 or abs(delta_y) > abs(sim_param.effect_validation*delta_x):
+                    return 'right'
+                elif round(abs(delta_x)/abs(delta_y), sim_param.round_value) > diag: ## diagonal
+                    return 'far_right'
+                else:
+                    return ''
+            
+            else:
+                return 'far'
+            
+        elif delta_x < 0: ## close or left or right or close_left or close_right
+            
+            if delta_y > 0: ## close or left or close_left
+                
+                if delta_y == 0 or abs(delta_x) > abs(sim_param.effect_validation*delta_y):
+                    return 'close'
+                elif delta_x == 0 or abs(delta_y) > abs(sim_param.effect_validation*delta_x):
+                    return 'left'
+                elif round(abs(delta_x)/abs(delta_y), sim_param.round_value) > diag: ## diagonal
+                    return 'close_left'
+                else:
+                    return ''
+                    
+            elif delta_y < 0: ## close or right or close_right
+                
+                if delta_y == 0 or abs(delta_x) > abs(sim_param.effect_validation*delta_y):
+                    return 'close'
+                elif delta_x == 0 or abs(delta_y) > abs(sim_param.effect_validation*delta_x):
+                    return 'right'
+                elif round(abs(delta_x)/abs(delta_y), sim_param.round_value) > diag: ## diagonal
+                    return 'close_right'
+                else:
+                    return ''
+            
+            else:
+                return 'close'
+                
+        else: ## delta_x == 0
+            if delta_y < 0:
                 return 'right'
             else:
-                return ''
-        
-        elif abs(round(delta_x/delta_y, sim_param.round_value)) > 0.5: ## diagonals
+                return 'left'
 
-            if delta_x > 0 and delta_y > 0: 
-                return 'far_left'
-            elif delta_x > 0 and delta_y < 0: 
-                return 'far_right'
-            elif delta_x < 0 and delta_y > 0: 
-                return 'close_left'
-            elif delta_x < 0 and delta_y < 0: 
-                return 'close_right'
-            else:
-                return ''                  
- 
-        else:
-            return ''
+
+
+
             
         
             
@@ -160,15 +191,20 @@ def compute_effect(initial_obj_pos, final_obj_pos):
 #    return effect_found
             
 if __name__ == '__main__':
-    print(compute_effect([0,0,0], [1,1,1]))
-    print(compute_effect([0,0,0], [-1,1,1]))
-    print(compute_effect([0,0,0], [1,-1,1]))
-    print(compute_effect([0,0,0], [-1,-1,1]))
+    print(compute_effect([0,0,0], [1,1,1])) ## far_left
+    print(compute_effect([0,0,0], [-1,1,1])) ## close_left
+    print(compute_effect([0,0,0], [1,-1,1])) ## far_right
+    print(compute_effect([0,0,0], [-1,-1,1])) ## close_right
     
-    print(compute_effect([0,0,0], [1,0,1]))
-    print(compute_effect([0,0,0], [0,1,-1]))
-    print(compute_effect([0,0,0], [-1,0,1]))
-    print(compute_effect([0,0,0], [0,-1,-1]))
+    print('\n' + compute_effect([0,0,0], [1,0.51,1])) ## far_left
+    print(compute_effect([0,0,0], [-1,1,1])) ## close_left
+    print(compute_effect([0,0,0], [1,-1,1])) ## far_right
+    print(compute_effect([0,0,0], [-1,-1,1])) ## close_right    
+    
+    print('\n' + compute_effect([0,0,0], [1,0,1])) ## far
+    print(compute_effect([0,0,0], [0,1,-1])) ## left
+    print(compute_effect([0,0,0], [-1,0,1])) ## close
+    print(compute_effect([0,0,0], [0,-1,-1])) ## right
     
     print(compute_effect([0,0,0], [0,0,0]))
            

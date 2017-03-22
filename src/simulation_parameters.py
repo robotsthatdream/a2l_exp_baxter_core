@@ -27,6 +27,7 @@ dpi = 300
 round_value = 3
 effect_validation = 3 ## number of times a move in an axis must be > than 
                       ## in the other one to be accepted as effect
+effect_diagonal = 0.5
 
 print_prob_table_values = False ## print the CPTs values
 print_unknown_affordances = False ## print name of unknown affordances
