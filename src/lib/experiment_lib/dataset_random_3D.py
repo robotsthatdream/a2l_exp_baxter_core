@@ -256,10 +256,10 @@ def create_discr_trajs(nb_initial_pos,
                 
                 if sim_param.semi_random_trajs:
                     var_x = random.choice([-step_length, 0, step_length])
-                    if var_x != 0:
-                        var_y = 0
-                    else:
-                        var_y = random.choice([-step_length, 0, step_length])
+#                    if var_x != 0:
+#                        var_y = 0
+#                    else:
+                    var_y = random.choice([-step_length, 0, step_length])
 #                    new_z = round(current_z + random.choice(step_options), sim_param.round_value)
                 else:
                     var_x = random.uniform(-step_length/2,step_length/2)

@@ -35,10 +35,10 @@ def learn_bn(filepath, learn_algo):
     elif learn_algo == 'tabu':
         learner.useLocalSearchWithTabuList()
     elif learn_algo == 'k2':
-        if sim_param.distance_param:
-            learner.useK2([3,2,1,0])
+        if sim_param.inclination_param:
+            learner.useK2([4,3,2,1,0])
         else:
-            learner.useK2([2,1,0])
+            learner.useK2([3,2,1,0])
         
     else:
         print('ERROR - learn_bn : there was a problem while selecting the learner')

@@ -313,19 +313,6 @@ def compute_obj_pos(box_pos,
 #    new_box_pos = [round(pos,sim_param.round_value) for pos in new_box_pos]
 #    return obj_moved, new_box_pos
 
-'''
-Given a effect return the related final position
-'''
-def identify_final_pos(_obj_pos, _effect):
-    if _effect == 'far':
-        return [_obj_pos[0] + sim_param.obj_displacement, _obj_pos[1], 0]
-    elif _effect == 'close':
-        return [_obj_pos[0] - sim_param.obj_displacement, _obj_pos[1], 0]
-    elif _effect == 'left':
-        return [_obj_pos[0], _obj_pos[1] + sim_param.obj_displacement, 0]
-    elif _effect == 'right':
-        return [_obj_pos[0], _obj_pos[1] - sim_param.obj_displacement, 0] 
-
    
 #'''
 #Given a effect return the related final position

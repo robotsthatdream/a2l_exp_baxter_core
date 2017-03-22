@@ -392,10 +392,10 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                 
                 if sim_param.semi_random_trajs:
                     var_x = random.choice([-step_length, 0, step_length])
-                    if var_x != 0:
-                        var_y = 0
-                    else:
-                        var_y = random.choice([-step_length, 0, step_length])
+#                    if var_x != 0:
+#                        var_y = 0
+#                    else:
+                    var_y = random.choice([-step_length, 0, step_length])
 #                    new_z = round(current_z + random.choice(step_options), sim_param.round_value)
                 else:
                     var_x = random.uniform(-step_length/2,step_length/2)
@@ -652,7 +652,7 @@ def plot_infer_trajs_iterations_effect_init_pos(iterations_dict,
     init_pos_results_vector = [] ## to store all the results in an iteration
     for current_init_pos in range(sim_param.nb_init_pos_for_adaption):
         init_pos_results = [] ## up, left, down, right
-        for ef in ['far', 'left', 'close', 'right']:
+        for ef in sim_param.effect_values:
             if not (current_init_pos, ef) in current_dataset_size_dict:
                 print('Unknown effect for', (current_init_pos, ef))
                 init_pos_results.append("fail")

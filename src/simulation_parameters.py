@@ -140,7 +140,9 @@ move_values = ['far',
                'right', 'right_up', 'right_down',
                'up',
                'down']               
-effect_values = ['left', 'right', 'close', 'far']
+effect_values = ['left', 'right', 
+                 'close', 'close_left', 'close_right',
+                 'far', 'far_left', 'far_right']
 #effect_values = ['right']               
 
 #remote_far_boundary_value = 2 * obj_side

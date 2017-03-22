@@ -274,6 +274,19 @@ def create_diverse_trajs(traj,
             displ_vector[0] -= sim_param.obj_displacement            
         elif effect == 'far':
             displ_vector[0] += sim_param.obj_displacement
+            
+        elif effect == 'far_right':
+            displ_vector[0] += sim_param.obj_displacement
+            displ_vector[1] -= sim_param.obj_displacement
+        elif effect == 'far_left':
+            displ_vector[0] += sim_param.obj_displacement
+            displ_vector[1] += sim_param.obj_displacement
+        elif effect == 'close_right':
+            displ_vector[0] -= sim_param.obj_displacement 
+            displ_vector[1] -= sim_param.obj_displacement
+        elif effect == 'close_left':
+            displ_vector[0] -= sim_param.obj_displacement
+            displ_vector[1] += sim_param.obj_displacement
         tmp_obj_pos = [x+y for x,y in zip(obj_pos_vector[0], displ_vector)]
         tmp_traj += tmp_obj_pos
         tmp_traj += zero_vector        

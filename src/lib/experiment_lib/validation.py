@@ -334,7 +334,7 @@ def affordance_validation(current_results_folder,
 #            mean_prob += traj_mean_prob
             mean_prob = 0 ## TBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
             
-            ## update statistics
+            ## update statistics ## TBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
             if res == 'success' and desired_effect == 'right':
                 nb_success_r += 1
             elif res == 'success' and desired_effect == 'left':
@@ -458,7 +458,8 @@ def check_affordance(bn, ie,
     if obtained_effect != "" and obtained_effect !=  None and obtained_effect != '':
         print('real obtained_effect: ------------->', obtained_effect.upper())
         
-        if expected_effect in obtained_effect:
+#        if expected_effect in obtained_effect:
+        if expected_effect == obtained_effect:
             traj_res = 'success'
         else:
             if sim_obj_moved:

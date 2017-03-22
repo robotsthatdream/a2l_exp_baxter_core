@@ -57,9 +57,9 @@ def print_sim_param(print_values,
         current_score = 'LIKELIHOOD'
     print('\nSCORE :', current_score)
 
-    variables = ['effect', 'orientation', 'move']
-    if sim_param.distance_param:
-        variables += ['distance']
+    variables = ['effect', 'move', 'distance', 'orientation']
+    if sim_param.inclination_param:
+        variables += ['inclination']
     print('\nVARIABLES :', variables)
 
     print('\nFIXED OBJ POSITION :', sim_param.fixed_obj_pos)
