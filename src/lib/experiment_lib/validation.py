@@ -545,18 +545,21 @@ def simulate_traj(bn, ie,
                     [current_eef_x,current_eef_y], 
                     obj_pos_dict[obj_name],
                     current_orien)
-
-#                inclination = discr_inclin.compute_inclination_discr(
-#                    obj_pos_dict[obj_name],
-#                    [current_eef_x,current_eef_y,current_eef_z],             
-#                    current_inclin)  
-                
-                inclination = 'inclin_4'
                     
-                node_names += ['distance'+str(obj_id),
-                               'orientation'+str(obj_id),
-                               'inclination'+str(obj_id)]
-                node_values += [distance, orientation, inclination]
+                if sim_param.inclination_param:
+                    inclination = discr_inclin.compute_inclination_discr(
+                        obj_pos_dict[obj_name],
+                        [current_eef_x,current_eef_y,current_eef_z],             
+                        current_inclin)                      
+                    node_names += ['distance'+str(obj_id),
+                                   'orientation'+str(obj_id),
+                                   'inclination'+str(obj_id)]
+                    node_values += [distance, orientation, inclination]
+                else:
+                    node_names += ['distance'+str(obj_id),
+                                   'orientation'+str(obj_id)]
+                    node_values += [distance, orientation]                    
+                
                 
                 obj_id += 1
                 

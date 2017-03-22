@@ -51,7 +51,7 @@ save_trajs = True ## save ALL inferred trajectory
 save_some_trajs = False ## save SOME inferred trajectory
 
 ''' Variables '''
-distance_param = True
+inclination_param = False
 
 ''' Scores '''
 score_likelihood = False
@@ -160,7 +160,7 @@ perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 5
+nb_adapted_iterations = 2
 extend_max_trajs = 1
 extend_max_movs = random_max_movs/1
 nb_init_pos_for_adaption = nb_min_init_pos

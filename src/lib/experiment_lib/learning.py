@@ -27,7 +27,8 @@ def learn_bn(filepath, learn_algo):
         learner.addMandatoryArc(0,1)            
         learner.addMandatoryArc(2,1)
         learner.addMandatoryArc(3,1)
-        learner.addMandatoryArc(4,1)
+        if sim_param.inclination_param:
+            learner.addMandatoryArc(4,1)
 
     elif learn_algo == 'hillclimbing':
         learner.useGreedyHillClimbing()

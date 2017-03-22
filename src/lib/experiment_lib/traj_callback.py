@@ -181,6 +181,15 @@ class Traj_callback():
                         [feedback_wp_vector[pos+1][0],
                         feedback_wp_vector[pos+1][1],
                         feedback_wp_vector[pos+1][2]])
+                        
+            distance = discr_dist.compute_distance(
+                        [feedback_wp_vector[pos][0],
+                        feedback_wp_vector[pos][1],
+                        feedback_wp_vector[pos][2]],
+                        [feedback_wp_vector[pos+1][0],
+                        feedback_wp_vector[pos+1][1],
+                        feedback_wp_vector[pos+1][2]],
+                        self.current_dist)             
     
             orientation = discr_orien.compute_orientation_discr(
                         [feedback_wp_vector[pos][0],
@@ -189,25 +198,21 @@ class Traj_callback():
                         feedback_wp_vector[pos+1][1]],
                         self.current_orien)
                              
-#            inclination = discr_inclin.compute_inclination_discr(
-#                        [feedback_wp_vector[pos][0],
-#                        feedback_wp_vector[pos][1],
-#                        feedback_wp_vector[pos][2]],
-#                        [feedback_wp_vector[pos+1][0],
-#                        feedback_wp_vector[pos+1][1],
-#                        feedback_wp_vector[pos+1][2]],
-#                        self.current_inclin)
-            inclination = 'inclin_4'
-
-            distance = discr_dist.compute_distance(
-                        [feedback_wp_vector[pos][0],
-                        feedback_wp_vector[pos][1],
-                        feedback_wp_vector[pos][2]],
-                        [feedback_wp_vector[pos+1][0],
-                        feedback_wp_vector[pos+1][1],
-                        feedback_wp_vector[pos+1][2]],
-                        self.current_dist)            
+            if sim_param.inclination_param:
+                inclination = discr_inclin.compute_inclination_discr(
+                            [feedback_wp_vector[pos][0],
+                            feedback_wp_vector[pos][1],
+                            feedback_wp_vector[pos][2]],
+                            [feedback_wp_vector[pos+1][0],
+                            feedback_wp_vector[pos+1][1],
+                            feedback_wp_vector[pos+1][2]],
+                            self.current_inclin)
+                self.delta_vector.append([move, distance, orientation, inclination]) 
+            else:
+                self.delta_vector.append([move, distance, orientation]) 
             
-            self.delta_vector.append([move, distance, orientation, inclination])  
         if sim_param.debug_infer:
-            print("delta_discr", [move, distance, orientation, inclination])
+            if sim_param.inclination_param:
+                print("delta_discr", [move, distance, orientation, inclination])
+            else:
+                print("delta_discr", [move, distance, orientation])

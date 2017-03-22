@@ -119,22 +119,27 @@ def discretize_trajs(delta_vector,
                                  current_delta.get_wp_init().get_y()],
                                  current_delta.get_obj_init(),
                                  current_orien_discr)                                 
-#                ''' Compute inclination ''' 
-#                inclination = discr_inclin.compute_inclination_discr(
-#                                 current_delta.get_obj_init(obj_id),                
-#                                 [current_delta.get_wp_init().get_x(),
-#                                 current_delta.get_wp_init().get_y(),
-#                                 current_delta.get_wp_init().get_z()],                             
-#                                 current_inclin_discr)
-                inclination = 'inclin_4'
+                
                 ''' Compute distance '''
                 distance = discr_dist.compute_distance(
                              [current_delta.get_wp_init().get_x(),
                              current_delta.get_wp_init().get_y(),
                              current_delta.get_wp_init().get_z()],
                              current_delta.get_obj_init(),                             
-                             current_dist_discr)            
-                discr_delta_values = discr_delta_values + [distance, orientation, inclination]
+                             current_dist_discr)
+
+                if sim_param.inclination_param:
+                    ''' Compute inclination ''' 
+                    inclination = discr_inclin.compute_inclination_discr(
+                                     current_delta.get_obj_init(),                
+                                     [current_delta.get_wp_init().get_x(),
+                                     current_delta.get_wp_init().get_y(),
+                                     current_delta.get_wp_init().get_z()],                             
+                                     current_inclin_discr)
+
+                    discr_delta_values = discr_delta_values + [distance, orientation, inclination]
+                else:
+                    discr_delta_values = discr_delta_values + [distance, orientation]
                                           
 #            print([current_delta.get_effect(), 
 #                   move,
@@ -164,8 +169,9 @@ def save_discr_deltas(dataset_filename,
         file.write('distance'+str(obj_id))
         file.write(',')
         file.write('orientation'+str(obj_id))
-        file.write(',')
-        file.write('inclination'+str(obj_id))
+        if sim_param.inclination_param:
+            file.write(',')
+            file.write('inclination'+str(obj_id))
         if obj_id != len(sim_param.obj_name_vector)-1:
             file.write(',')
     file.write('\n')     

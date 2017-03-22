@@ -150,8 +150,8 @@ if __name__ == "__main__":
 #    dataset_type_vector = ['directed', 'random']
 
 #    learn_algo_vector = ['hard-coded', 'hillclimbing', 'k2']    
-    learn_algo_vector = ['hillclimbing']
-#    learn_algo_vector = ['hard-coded']
+#    learn_algo_vector = ['hillclimbing']
+    learn_algo_vector = ['hard-coded']
 #    learn_algo_vector = ['hard-coded', 'hillclimbing']    
 
     ''' Create folders '''
