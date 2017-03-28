@@ -36,6 +36,7 @@ from mpl_toolkits.mplot3d import Axes3D
 #from matplotlib.patches import Circle
 import mpl_toolkits.mplot3d.art3d as art3d
 from scipy.linalg import norm
+import copy
 
 from scipy.spatial import distance as d
 from math import sqrt
@@ -58,24 +59,14 @@ def affordance_validation(current_results_folder,
                         current_dist,
                         left_gripper_interface):   
                             
-    ## to infer next move
+    ''' To infer next move '''
     ie = agrum.LazyPropagation(bn) 
     
-    ## restart statistics
-    nb_success_r = 0
-    nb_success_l = 0
-    nb_success_u = 0
-    nb_success_d = 0
-    nb_false_positive_r = 0
-    nb_false_positive_l = 0
-    nb_false_positive_u = 0
-    nb_false_positive_d = 0
-    nb_fail_r = 0
-    nb_fail_l = 0
-    nb_fail_u = 0
-    nb_fail_d = 0
-    
-    mean_prob = 0
+    ''' Initiqlize statistics '''
+    nb_success = 0
+    nb_false_positive = 0
+    nb_fail = 0    
+    mean_iter_prob = 0    
     
     print(' ')    
     
@@ -227,12 +218,10 @@ def affordance_validation(current_results_folder,
     total_inferred_discr_delta_vector = [] ## delta knowledge created during evaluations
 
     for curr_init_pos in range(nb_init_pos):
-        nb_effect = 0
         init_pos_coord = init_pos_vector[curr_init_pos]
         
         ## for each effect
-        while nb_effect < len(sim_param.effect_values):          
-            desired_effect = sim_param.effect_values[nb_effect]
+        for desired_effect in sim_param.effect_values:
 
             print('\n////////////////////')
             print('NEW TRAJ for init_pos', curr_init_pos, #init_pos_coord,
@@ -268,6 +257,7 @@ def affordance_validation(current_results_folder,
             init_pos_coord = init_pos_vector[curr_init_pos]  
 
             ''' Update eef pos'''
+            ros_services.call_move_to_initial_position([0.65,0.1,0.1])
             success = ros_services.call_move_to_initial_position(init_pos_coord) 
             if not success:
                 print("ERROR - call_move_to_initial_position failed")   
@@ -276,7 +266,7 @@ def affordance_validation(current_results_folder,
             eef_pos = [round(pos, sim_param.round_value) for pos in eef_pos[0:3]]
 #            left_gripper_interface.close()
             
-            ## path to save traj
+            ## Folder path to save traj
             if sim_param.save_trajs or \
                 sim_param.save_some_trajs or \
                 sim_param.plot_trajs or \
@@ -300,14 +290,14 @@ def affordance_validation(current_results_folder,
             ## infere traj
             res, eef_traj, obj_traj, \
             delta_class_vector, obtained_effect, \
-            tmp_inferred_discr_delta_vector = \
+            tmp_inferred_discr_delta_vector, \
+            mean_traj_prob = \
                 check_affordance(bn, ie,
                                 init_pos_coord, ## [X, Y, Z]
                                 init_pos_vector,
                                 obj_pos_dict,
                                 desired_effect, 
                                 current_orien, current_inclin, current_dist,
-                                current_iteration,
                                 filepath)
 
             ## store current inferred traj
@@ -320,76 +310,28 @@ def affordance_validation(current_results_folder,
             dataset_size_class.add_inferred_traj(curr_init_pos, desired_effect, 
                                                  tmp_infer_traj_class)
 
-            ## store delta know created during iteration
-#            print("Inferred deltas for (", nb_effect, effect, ") : ", 
-#                  len(tmp_inferred_discr_delta_vector))
+            ## store delta knowledge created during iteration
             total_inferred_discr_delta_vector = \
-                total_inferred_discr_delta_vector + tmp_inferred_discr_delta_vector
-
-            ## compute current mean prob
-#            traj_mean_prob = 0
-#            for traj in eef_traj:
-#                traj_mean_prob += traj[3]
-#            traj_mean_prob = traj_mean_prob / len(eef_traj)
-#            mean_prob += traj_mean_prob
-            mean_prob = 0 ## TBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+                total_inferred_discr_delta_vector + tmp_inferred_discr_delta_vector        
             
-            ## update statistics ## TBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-            if res == 'success' and desired_effect == 'right':
-                nb_success_r += 1
-            elif res == 'success' and desired_effect == 'left':
-                nb_success_l += 1
-            elif res == 'success' and desired_effect == 'far':
-                nb_success_u += 1
-            elif res == 'success' and desired_effect == 'close':
-                nb_success_d += 1
-            elif res == 'false_pos' and desired_effect == 'right':
-                nb_false_positive_r += 1
-            elif res == 'false_pos' and desired_effect == 'left':
-                nb_false_positive_l += 1                
-            elif res == 'false_pos' and desired_effect == 'far':
-                nb_false_positive_u += 1
-            elif res == 'false_pos' and desired_effect == 'close':
-                nb_false_positive_d += 1
-            elif res == 'fail' and desired_effect == 'right':
-                nb_fail_r += 1
-            elif res == 'fail' and desired_effect == 'left':
-                nb_fail_l += 1                
-            elif res == 'fail' and desired_effect == 'far':
-                nb_fail_u += 1
-            elif res == 'fail' and desired_effect == 'close':
-                nb_fail_d += 1
-            nb_effect += 1
+            ## update statistics
+            mean_iter_prob += mean_traj_prob
+            if res == 'success':
+                nb_success += 1
+            elif res == 'false_pos':
+                nb_false_positive += 1
+            elif res == 'fail':
+                nb_fail += 1
 
         curr_init_pos += 1
     
-    if sim_param.print_stats:
-        print('\nNumber of trajectories inferred :',  len(sim_param.effect_values) 
-                                                * len(init_pos_vector))
-        
-        print('\nSuccess trajectories :', nb_success_r + nb_success_l +
-                                                nb_success_u + nb_success_d)     
-        
-        print('\nFalse positive trajectories :', nb_false_positive_r + 
-                                                nb_false_positive_l +
-                                                nb_false_positive_u +
-                                                nb_false_positive_d)
-        
-        print('\nFailed trajectories :', nb_fail_r + nb_fail_l +
-                                                nb_fail_u + nb_fail_d)
+    dataset_size_class.set_inference_res([nb_success, 
+                                          nb_false_positive, 
+                                          nb_fail])
+    dataset_size_class.set_mean_prob_move(mean_iter_prob)
     
-    succ_value = sum([nb_success_r, nb_success_l, nb_success_u, nb_success_d]) 
-    false_pos_value = sum([nb_false_positive_r, nb_false_positive_l,
-                        nb_false_positive_u, nb_false_positive_d])
-    fail_value = sum([nb_fail_r, nb_fail_l, nb_fail_u, nb_fail_d])
-    
-    mean_prob = mean_prob / (succ_value + false_pos_value + fail_value)
-    dataset_size_class.set_inference_res([succ_value, 
-                                          false_pos_value, 
-                                          fail_value])
-    dataset_size_class.set_mean_prob_move(mean_prob)
-    
-    return total_inferred_discr_delta_vector
+    return total_inferred_discr_delta_vector, \
+            mean_iter_prob
 
 '''
 Infere traj to get a desired effect
@@ -400,7 +342,6 @@ def check_affordance(bn, ie,
                     obj_pos_dict,
                     expected_effect, 
                     current_orien, current_inclin, current_dist,
-                    current_iteration,
                     filepath):
  
     eef_traj_vector = []
@@ -411,7 +352,7 @@ def check_affordance(bn, ie,
     obtained_effect = ''
    
     ''' Simulate trajectory '''
-    traj, sim_obj_moved = \
+    traj, sim_obj_moved, mean_traj_prob = \
         simulate_traj(bn, ie, 
                        init_pos_coord,
                        obj_pos_dict,
@@ -478,6 +419,15 @@ def check_affordance(bn, ie,
     if d.euclidean(curr_obj_pos, 
                    sim_param.first_obj_pos) > sim_param.obj_too_far_distance:        
         print('-------------> UPDATING CUBE POSITION!')
+
+        ## move arm up
+        eef_pos = ros_services.call_get_eef_pose('left')
+        eef_pos = [round(poss, sim_param.round_value) for poss in eef_pos[0:3]]
+        pos_up = copy.copy(eef_pos)
+        pos_up[2] += 0.2
+        success = ros_services.call_move_to_initial_position(pos_up) 
+        if not success:
+            print("ERROR - extend dataset failed")
         
         ## compute new obj pos
         new_obj_pos = sim_param.first_obj_pos
@@ -492,7 +442,6 @@ def check_affordance(bn, ie,
         success = ros_services.call_restart_world("object",
                                                   sim_param.obj_name_vector[0],
                                                   new_obj_pos)        
-
         if not success:
             print("ERROR - restart_world failed for object", sim_param.obj_name_vector[0])    
 
@@ -500,7 +449,8 @@ def check_affordance(bn, ie,
             eef_traj_vector, obj_traj_vector, \
             delta_class_vector, \
             obtained_effect, \
-            inf_dicr
+            inf_dicr, \
+            mean_traj_prob
 
 '''
 Simulate traj to get a desired effect
@@ -516,9 +466,8 @@ def simulate_traj(bn, ie,
     eef_traj = [[round(eef_pos[0], sim_param.round_value),
                  round(eef_pos[1], sim_param.round_value), 
                  round(eef_pos[2], sim_param.round_value)]]
-#    delta_vector = [] ## [next_mov_discr,[(distance, orientation, inclination)]]
     all_obj_moved = False
-
+    mean_traj_prob = 0
     i = 0
     while not all_obj_moved and i < sim_param.inferred_max_moves:
         if sim_param.debug_infer:
@@ -560,8 +509,7 @@ def simulate_traj(bn, ie,
                     node_names += ['distance'+str(obj_id),
                                    'orientation'+str(obj_id)]
                     node_values += [distance, orientation]                    
-                
-                
+                                
                 obj_id += 1
                 
             ## infere next move            
@@ -570,20 +518,21 @@ def simulate_traj(bn, ie,
                     infer.infere_mov(bn, ie,                                        
                                      node_names,
                                      node_values)
-#                if sim_param.debug_infer:
+                mean_traj_prob += prob_value
+#                if sim_param.debug_infer:                                        
                 print(node_values, next_mov_discr, prob_value)
                 print('Next move :', next_mov_discr.upper(),
-                  'for', node_values,
-                  'with prob value', prob_value)
+                      'for', node_values,
+                      'with prob value', prob_value)
                 if same_prob:
                     print('-------------------------------> UNKNOWN PROBABILITY, STOP INFERENCE')
-                    return eef_traj, False               
+                    return eef_traj, False, 0    
                         
                 next_mov_discr = [next_mov_discr] ## to compute move later
             except Exception as e: 
                 if sim_param.debug_infer:
                     print('-------------------------------> UNKNOWN LABEL WHILE INFERRING!!!', e)
-                return eef_traj, False
+                return eef_traj, False, 0
 
         else:
             ## compute neighbours virtual positions
@@ -793,9 +742,9 @@ def simulate_traj(bn, ie,
                 delta_z = -move_coord
                 
             ## length of the movement must be equal to step_length
-            dims_vector = abs(delta_x) + abs(delta_y) + abs(delta_z)
-            if dims_vector == 0: ## to avoid div by 0 ??? TODOOOOOOOOOOOOOOOOOOOOOOO
-                dims_vector = 1
+#            dims_vector = abs(delta_x) + abs(delta_y) + abs(delta_z)
+#            if dims_vector == 0: ## to avoid div by 0 ??? TODOOOOOOOOOOOOOOOOOOOOOOO
+#                dims_vector = 1
             dims_vector = 1
             mov_step = round(sim_param.step_length/sqrt(dims_vector), sim_param.round_value)
             if delta_x > 0:
@@ -814,7 +763,7 @@ def simulate_traj(bn, ie,
         if sim_param.debug_infer:
             print("Delta :", delta_x, delta_y, delta_z, 
                   'Norm:', round(d.euclidean([0, 0, 0],
-                                          [delta_x, delta_y, delta_z]), 3))
+                                [delta_x, delta_y, delta_z]), sim_param.round_value))
                                               
         ## move eef to new position
 #        next_eef_x = round(current_eef_x + delta_x/len(next_mov_discr), sim_param.round_value)
@@ -829,8 +778,7 @@ def simulate_traj(bn, ie,
             print('New EEF pos :', 
                   next_eef_x, next_eef_y, next_eef_z)
             
-        eef_traj.append([next_eef_x, next_eef_y, next_eef_z])
-#        delta_vector.append(node_values[1:] + [next_mov_discr])        
+        eef_traj.append([next_eef_x, next_eef_y, next_eef_z])  
 
         ## check if obj was moved
         obj_moved_pose_dict = OrderedDict()
@@ -861,8 +809,10 @@ def simulate_traj(bn, ie,
         next_eef_y = round(current_eef_y + delta_y/len(next_mov_discr), sim_param.round_value)
         next_eef_z = round(current_eef_z + delta_z/len(next_mov_discr), sim_param.round_value)
         eef_traj.append([next_eef_x, next_eef_y, next_eef_z])
+        
+    mean_traj_prob = mean_traj_prob/len(eef_traj)
 
-    return eef_traj, all_obj_moved
+    return eef_traj, all_obj_moved, mean_traj_prob
 
 '''
 a

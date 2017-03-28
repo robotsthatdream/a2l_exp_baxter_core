@@ -265,7 +265,7 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
     discr_dataset_filename = current_generated_files_folder + \
                 'random_discr_wps_iteration_' + str(current_iteration) + '.csv'
     discr.save_discr_deltas(discr_dataset_filename, 
-                            extended_discr_delta_vector)                
+                            extended_discr_delta_vector)
     
     inferred_discr_delta_vector = []
     for current_algo in learn_algo_vector:            
@@ -293,7 +293,8 @@ def adaptive_learning_dataset_size(current_dataset_stats, ## random
         ''' Evaluation '''
         dataset_size_class = \
             dataset_series_classes.Dataset_size_results(current_nb_initial_pos)        
-        tmp_inferred_discr_delta_vector = \
+        tmp_inferred_discr_delta_vector, \
+        mean_prob = \
             validation.affordance_validation(
                 current_results_folder,
                 bn, 

@@ -111,15 +111,20 @@ class Traj_callback():
                 
 #        ''' Check if object moved'''
         real_obj_moved = False
-        thrs = sim_param.obj_moved_threshold
+        thrs = 0 #sim_param.obj_moved_threshold
         initial_obj_pos = self.obj_traj_vector[0]
         final_obj_pos = self.obj_traj_vector[-1]
+
+        print('------------> BOX MOVE', 
+              abs(initial_obj_pos[0] - final_obj_pos[0]) +
+              abs(initial_obj_pos[1] - final_obj_pos[1]) +
+              abs(initial_obj_pos[2] - final_obj_pos[2])) 
   
         real_obj_moved = \
             (abs(initial_obj_pos[0] - final_obj_pos[0]) +
              abs(initial_obj_pos[1] - final_obj_pos[1]) +
              abs(initial_obj_pos[2] - final_obj_pos[2])) >= thrs                
-#        print('real_obj_moved', real_obj_moved)
+        print('real_obj_moved?', real_obj_moved)       
              
         if sim_param.debug_infer:
             print("obj_pos", initial_obj_pos, final_obj_pos)
@@ -134,12 +139,20 @@ class Traj_callback():
 
             for tmp_delta in self.delta_vector: 
                 ## in discr dataset file : 
-                self.traj_inferred_discr_delta_vector.append(
-                    [self.obtained_effect,  ## effect
-                     tmp_delta[0],  ## move 
-                     tmp_delta[1],  ## distance 
-                     tmp_delta[2],  ## orientation
-                     tmp_delta[3]]) ## inclination
+            
+                if sim_param.inclination_param:
+                    self.traj_inferred_discr_delta_vector.append(
+                        [self.obtained_effect,  ## effect
+                         tmp_delta[0],  ## distance 
+                         tmp_delta[1],  ## orientation
+                         tmp_delta[2],  ## inclination
+                         tmp_delta[3]]) ## move
+                else:
+                    self.traj_inferred_discr_delta_vector.append(
+                        [self.obtained_effect,  ## effect
+                         tmp_delta[0],  ## distance 
+                         tmp_delta[1],  ## orientation 
+                         tmp_delta[2]]) ## move
         else:
             if sim_param.debug_infer:    
                 print('------------> BOX MOVE', 
@@ -207,12 +220,12 @@ class Traj_callback():
                             feedback_wp_vector[pos+1][1],
                             feedback_wp_vector[pos+1][2]],
                             self.current_inclin)
-                self.delta_vector.append([move, distance, orientation, inclination]) 
+                self.delta_vector.append([distance, orientation, inclination, move]) 
             else:
-                self.delta_vector.append([move, distance, orientation]) 
+                self.delta_vector.append([distance, orientation, move]) 
             
         if sim_param.debug_infer:
             if sim_param.inclination_param:
-                print("delta_discr", [move, distance, orientation, inclination])
+                print("delta_discr", [distance, orientation, inclination, move])
             else:
-                print("delta_discr", [move, distance, orientation])
+                print("delta_discr", [distance, orientation, move])

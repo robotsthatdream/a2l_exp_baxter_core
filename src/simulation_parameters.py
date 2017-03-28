@@ -10,8 +10,8 @@ real_robot = False
 exec_traj = True
 new_dataset = False ## False to use the initial current dataset
 
-nb_min_init_pos = 1 ## better if mod 4
-nb_min_orientation_sections = 16
+nb_min_init_pos = 2 ## better if mod 4
+nb_min_orientation_sections = 8
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
 single_init_pos = False ## if False, circle of init pos around the box
@@ -27,7 +27,7 @@ dpi = 300
 round_value = 3
 effect_validation = 3 ## number of times a move in an axis must be > than 
                       ## in the other one to be accepted as effect
-effect_diagonal = 0.5
+effect_diagonal = 0.25 ## % of one axis respect to the other one to be considered as diagonal
 
 print_prob_table_values = False ## print the CPTs values
 print_unknown_affordances = False ## print name of unknown affordances
@@ -66,7 +66,7 @@ save_stats = True ## save the resulting plot stats
 print_stats = False ## print the numeric stats vectors
 
 ''' Print datasets '''
-print_directed_dataset_extended = False
+print_directed_dataset_extended = True
 print_discr_random_dataset = False
 
 ''' Tests '''
@@ -84,21 +84,20 @@ plot_dataset_size_score = True ## plot the score in the dataset size plots
 nb_dataset_sizes = 1 ## number of increments of init pos : 8->16->32->64
 #eef_z_value = 0.14
 eef_z_value = -0.145
-eef_width = 0.02
+eef_width = 0.015
 
 ''' Experiment Reproduce dataset (learn by demonstration) '''
 #experiment_type = 'a2l_reproduce_dataset'
 #nb_NN = 6 ## points around current position to infer next move
 experiment_version = 'intermediate_state'
 nb_infere_trajs = 1
-max_inferred_traj_tries = 1
 
 ''' ROS execution '''
 feedback_topic = '/a2l/traj_exec_info'
 feedback_window = 1
 current_feedback_window = 0
 obj_moved = False
-obj_moved_threshold = 0.001
+obj_moved_threshold = 0.005
 inferred_traj = []
 
 ''' Experiment set-up values '''
@@ -141,17 +140,14 @@ move_values = ['far',
                'right', 'right_up', 'right_down',
                'up',
                'down']               
-effect_values = ['left', 'right', 
-                 'close', 'close_left', 'close_right',
-                 'far', 'far_left', 'far_right']
-#effect_values = ['right']               
+effect_values = ['far', 'far_left', 'left', 'close_left', 'close', 
+                 'close_right', 'right', 'far_right']
+#effect_values = ['far', 'left', 'close', 'right']
 
 #remote_far_boundary_value = 2 * obj_side
 #far_close_boundary_value = 1 * obj_side
 
 orien_offset = round((2*math.pi/nb_min_orientation_sections)/2,  round_value)
-#orien_min_angle = -math.pi + math.pi/2  + orien_offset
-#orien_max_angle = math.pi + math.pi/2 + orien_offset
 orien_min_angle = round(-math.pi + orien_offset, round_value)
 orien_max_angle = round(math.pi + orien_offset, round_value)
 inclin_min_angle = round(0, round_value)
@@ -163,8 +159,8 @@ perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 2
-extend_max_trajs = 1
+nb_adapted_iterations = 20
+extend_max_trajs = 5
 extend_max_movs = random_max_movs/1
 nb_init_pos_for_adaption = nb_min_init_pos
 score_threshold = 0
@@ -178,7 +174,9 @@ cube_x = 0.07
 cube_y = 0.085
 cube_z = 0.08
 first_obj_pos = [0.65, 0.1, -0.145]
-obj_too_far_distance = 0.1 ## to move it back close to the eef init pos
+obj_too_far_distance = 0.07 ## to move it back close to the eef init pos
 new_obj_pos_dist = 0.025 ## for new pos close to init obj pos 
 radio = 0.2
+max_nb_inferred_tries = extend_max_trajs * 2 #len(effect_values)
+max_inferred_traj_tries = extend_max_trajs * 2
 

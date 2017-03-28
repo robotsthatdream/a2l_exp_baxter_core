@@ -109,7 +109,7 @@ def discretize_trajs(delta_vector,
                      current_delta.get_wp_final().get_z()])
 
         if move != 'zero':
-            discr_delta_values = [current_delta.get_effect(), move]        
+            discr_delta_values = [current_delta.get_effect()]        
 #            for obj_id in range(len(sim_param.obj_name_vector)):
             if True:
                 
@@ -137,9 +137,9 @@ def discretize_trajs(delta_vector,
                                      current_delta.get_wp_init().get_z()],                             
                                      current_inclin_discr)
 
-                    discr_delta_values = discr_delta_values + [distance, orientation, inclination]
+                    discr_delta_values = discr_delta_values + [distance, orientation, inclination, move]
                 else:
-                    discr_delta_values = discr_delta_values + [distance, orientation]
+                    discr_delta_values = discr_delta_values + [distance, orientation, move]
                                           
 #            print([current_delta.get_effect(), 
 #                   move,
@@ -148,7 +148,7 @@ def discretize_trajs(delta_vector,
 #                   inclination])
         
 #        print(discr_delta_values)
-        discr_dataset_vector.append(discr_delta_values)
+                discr_dataset_vector.append(discr_delta_values)
         nb_delta += 1    
     
     return discr_dataset_vector
@@ -162,8 +162,6 @@ def save_discr_deltas(dataset_filename,
     file = open(dataset_filename, 'w')    
     file.write('effect')
     file.write(',')
-    file.write('move')
-    file.write(',')
     
     for obj_id in range(len(sim_param.obj_name_vector)):
         file.write('distance'+str(obj_id))
@@ -174,6 +172,9 @@ def save_discr_deltas(dataset_filename,
             file.write('inclination'+str(obj_id))
         if obj_id != len(sim_param.obj_name_vector)-1:
             file.write(',')
+
+    file.write(',')            
+    file.write('move')
     file.write('\n')     
     
     traj_pos = 0
@@ -184,10 +185,7 @@ def save_discr_deltas(dataset_filename,
                 file.write(',')
         file.write('\n')                   
         traj_pos += 1
-    file.close()
-        
-#    if sim_param.print_discr_random_dataset:
-#        plt.show()    
+    file.close() 
         
 '''
 Test

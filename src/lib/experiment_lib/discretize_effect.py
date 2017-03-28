@@ -73,6 +73,8 @@ Real coordinates
 def compute_effect(initial_obj_pos, final_obj_pos):
     delta_x = round(final_obj_pos[0] - initial_obj_pos[0], sim_param.round_value)
     delta_y = round(final_obj_pos[1] - initial_obj_pos[1], sim_param.round_value)
+#    print('delta_x', delta_x)
+#    print('delta_y', delta_y)
     
     if delta_x == 0 and delta_y == 0:
 #        print('ERROR - compute_effect :', 

@@ -9,6 +9,7 @@ import random
 from math import sin,cos,pi,degrees
 import numpy as np
 import scipy.spatial.distance as spatial
+import math
 
 import os, sys
 run_path = os.path.realpath(os.path.abspath(os.path.join('..', '..')))
@@ -28,14 +29,15 @@ def gen_init_eef(nb_init_pos,
                [sim_param.untucked_left_eef_pos[2]]
 
     else:                     
-        angle = 2*pi/nb_init_pos    
-        list_radians = [angle*i for i in range(0,nb_init_pos)]
+        angle = round(2*pi/nb_init_pos, sim_param.round_value)  
+        tmp = round(math.pi/2, sim_param.round_value)
+        list_radians = [round(angle*i+tmp, sim_param.round_value)  for i in range(0,nb_init_pos)]
             
         list_x_axis = []
         list_y_axis = []    
         for a in list_radians:
-            list_x_axis.append(obj_pos[0] + cos(a)*radius)
-            list_y_axis.append(obj_pos[1] + sin(a)*radius)    
+            list_x_axis.append(obj_pos[0] + round(cos(a)*radius, sim_param.round_value)) 
+            list_y_axis.append(obj_pos[1] + round(sin(a)*radius, sim_param.round_value))   
 #        list_z_axis = [obj_pos[2] for i in range(len(list_x_axis))]
         list_z_axis = [sim_param.eef_z_value for i in range(len(list_x_axis))]              
         
@@ -64,5 +66,5 @@ Test
 '''
 if __name__== "__main__":
 #    print (gen_init_eef(4))
-    print (gen_init_eef(4, 0.2, [0.65, 0.1, 0.14]))
+    print (gen_init_eef(2, 0.2, [0.65, 0.1, 0.14]))
 #    print (compute_nb_wps([0.0, 0.0], [1.0, 1.0]))

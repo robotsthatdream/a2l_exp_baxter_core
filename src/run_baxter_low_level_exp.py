@@ -138,8 +138,7 @@ def generate_folders():
     if not os.path.exists(current_plot_folder):
         os.makedirs(current_plot_folder)    
 
-    return current_generated_files_folder, current_results_folder, current_plot_folder
-    
+    return current_generated_files_folder, current_results_folder, current_plot_folder    
     
 '''
 Main
@@ -152,8 +151,8 @@ if __name__ == "__main__":
 #    dataset_type_vector = ['directed', 'random']
 
 #    learn_algo_vector = ['hard-coded', 'hillclimbing', 'k2']    
-#    learn_algo_vector = ['hillclimbing']
-    learn_algo_vector = ['hard-coded']
+    learn_algo_vector = ['hillclimbing']
+#    learn_algo_vector = ['hard-coded']
 #    learn_algo_vector = ['hard-coded', 'hillclimbing']    
 
     ''' Create folders '''
@@ -459,6 +458,7 @@ if __name__ == "__main__":
                     previous_iter_dataset_stats_class = current_iter_dataset_stats_class
                     previous_iter_raw_delta_vector = current_iter_raw_delta_vector
                     previous_iter_score_vector = current_iter_score_vector
+                    
                     if better_norm_score=='bigger':
 #                        ## plot dataset generated
 #                        filename = \
@@ -472,7 +472,7 @@ if __name__ == "__main__":
                                 iterations_dict,
                                 sim_param.nb_init_pos_for_adaption,
                                 current_algo,
-                                nb_iter+1,
+                                nb_iter,
                                 current_plot_folder)
                 else :
                     print('\nTemporal new raw entries discarded', 
@@ -509,14 +509,14 @@ if __name__ == "__main__":
                     iterations_dict,
                     sim_param.nb_init_pos_for_adaption,
                     current_algo,
-                    nb_iter+1,
+                    nb_iter,
                     current_plot_folder)
                     
-            ## plot last dataset generated
-            filename = \
-                current_generated_files_folder + \
-                'random_discr_wps_iteration_' + str(nb_iter) + '.csv'
-            dataset_stats.plot_dataset_stats(filename)
+#            ## plot last dataset generated
+#            filename = \
+#                current_generated_files_folder + \
+#                'random_discr_wps_iteration_' + str(nb_iter) + '.csv'
+#            dataset_stats.plot_dataset_stats(filename)
                     
         ''' Print experiment main configuration '''
         print_sim_param([initial_pos_vector], 

@@ -306,7 +306,7 @@ def create_discr_trajs(nb_initial_pos):
                     current_extended_traj_vector.append(
                         current_extended_traj)
                     
-                    if sim_param.print_directed_dataset_extended and init_pos == 7:
+                    if sim_param.print_directed_dataset_extended:# and init_pos == 7:
                         ax.plot(current_extended_traj.get_traj_x(), 
                                 current_extended_traj.get_traj_y(), '-*')
 #                    plt.savefig('save_fig_' + str(save_fig_id) + '.png')

@@ -219,6 +219,8 @@ def compute_obj_pos(box_pos,
 
         if obj_moved:
             
+            thrs = 0.01
+            
 #            print(i, wp_next.x, wp_next.y, wp_next.z)
             
             ## touch top
@@ -231,32 +233,76 @@ def compute_obj_pos(box_pos,
             
             if wp_origin.x > l_top_back_left.x and \
                 wp_origin.x < l_top_front_left.x and \
-                wp_origin.y > l_top_front_left.y: ## right
+                wp_origin.y > l_top_front_left.y: ## right, far right, close right
 #                    print('l_top_back_left.x', l_top_back_left.x)
 #                    print('l_top_front_left.x', l_top_front_left.x)            
-#                    print('l_top_front_left.y', l_top_front_left.y)                
-                    new_box_pos[1] -= sim_param.obj_displacement
+#                    print('l_top_front_left.y', l_top_front_left.y)
+                    
+                    if abs(wp_next.x - wp_origin.x) < thrs: ## right
+                        new_box_pos[1] -= sim_param.obj_displacement
+                    elif wp_next.x < wp_origin.x: ## close right
+                        new_box_pos[0] -= sim_param.obj_displacement
+                        new_box_pos[1] -= sim_param.obj_displacement
+                    elif wp_next.x > wp_origin.x: ## far right
+                        new_box_pos[0] += sim_param.obj_displacement
+                        new_box_pos[1] -= sim_param.obj_displacement
+                    else:
+                        print('compute_obj_pos - unknown displacement')                        
+                        
             elif wp_origin.x > l_top_back_right.x and \
                 wp_origin.x < l_top_front_right.x and \
-                wp_origin.y < l_top_front_right.y: ## left
+                wp_origin.y < l_top_front_right.y: ## left, far left, close left
 #                    print('l_top_back_right.x', l_top_back_right.x)
 #                    print('l_top_front_right.x', l_top_front_right.x)            
 #                    print('l_top_front_right.y', l_top_front_right.y)
-                    new_box_pos[1] += sim_param.obj_displacement
+
+                    if abs(wp_next.x - wp_origin.x) < thrs: ## left
+                        new_box_pos[1] += sim_param.obj_displacement
+                    elif wp_next.x < wp_origin.x: ## close left
+                        new_box_pos[0] -= sim_param.obj_displacement
+                        new_box_pos[1] += sim_param.obj_displacement
+                    elif wp_next.x > wp_origin.x: ## far left
+                        new_box_pos[0] += sim_param.obj_displacement
+                        new_box_pos[1] += sim_param.obj_displacement
+                    else:
+                        print('compute_obj_pos - unknown displacement')  
+
             elif wp_origin.y < l_top_front_left.y and \
                 wp_origin.y > l_top_front_right.y and \
                 wp_origin.x > l_top_front_right.x: ## close
 #                    print('l_top_front_left.y', l_top_front_left.y)
 #                    print('l_top_front_right.y', l_top_front_right.y)
 #                    print('l_top_front_right.x', l_top_front_right.x)                
-                    new_box_pos[0] -= sim_param.obj_displacement
+
+                    if abs(wp_next.y - wp_origin.y) < thrs: ## close
+                        new_box_pos[0] -= sim_param.obj_displacement
+                    elif wp_next.y < wp_origin.y: ## close right
+                        new_box_pos[0] -= sim_param.obj_displacement
+                        new_box_pos[1] -= sim_param.obj_displacement
+                    elif wp_next.y > wp_origin.y: ## close left
+                        new_box_pos[0] -= sim_param.obj_displacement
+                        new_box_pos[1] += sim_param.obj_displacement
+                    else:
+                        print('compute_obj_pos - unknown displacement')
+
             elif wp_origin.y < l_top_back_left.y and \
                 wp_origin.y > l_top_back_right.y and \
                 wp_origin.x < l_top_back_right.x: ## far
 #                    print('l_top_back_left.x', l_top_back_left.x)
 #                    print('l_top_back_right.x', l_top_back_right.x)            
 #                    print('l_top_back_right.y', l_top_back_right.y)                                
-                    new_box_pos[0] += sim_param.obj_displacement
+
+                    if abs(wp_next.y - wp_origin.y) < thrs: ## far
+                        new_box_pos[0] += sim_param.obj_displacement
+                    elif wp_next.y < wp_origin.y: ## far right
+                        new_box_pos[0] += sim_param.obj_displacement
+                        new_box_pos[1] -= sim_param.obj_displacement
+                    elif wp_next.y > wp_origin.y: ## far left
+                        new_box_pos[0] += sim_param.obj_displacement
+                        new_box_pos[1] += sim_param.obj_displacement
+                    else:
+                        print('compute_obj_pos - unknown displacement')
+
         
     return obj_moved, new_box_pos
     

@@ -51,6 +51,16 @@ class Delta():
         
     def set_effect(self, effect):
         self.effect = effect
+
+    def update_obj_initial(self, obj_info):
+        self.current_next_obj_pos_vector[0] = obj_info[0]
+        self.current_next_obj_pos_vector[1] = obj_info[1]
+        self.current_next_obj_pos_vector[2] = obj_info[2]
+
+    def update_obj_final(self, obj_info):
+        self.current_next_obj_pos_vector[3] = obj_info[0]
+        self.current_next_obj_pos_vector[4] = obj_info[1]
+        self.current_next_obj_pos_vector[5] = obj_info[2]
         
     def print_me(self):
         print('\neffect', self.effect)
