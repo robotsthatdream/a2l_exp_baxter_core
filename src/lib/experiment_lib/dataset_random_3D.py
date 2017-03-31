@@ -387,7 +387,7 @@ def create_discr_trajs(nb_initial_pos,
                             else:
                                 tmp_nb_box_touched = nb_initial_pos
                             if nb_box_touched == \
-                                tmp_nb_box_touched * len(sim_param.effect_values) * 4:
+                                tmp_nb_box_touched * len(sim_param.effect_values) * 16:
                                 nb_max_box_touched_found = True
                                 
                             ## print traj

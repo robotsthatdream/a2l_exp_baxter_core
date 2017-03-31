@@ -108,7 +108,7 @@ def create_diverse_trajs(traj,
 
         tmp_traj = [] ## [eef_pos eef_orien obj_pos obj_orien] = [float]
         
-        zero_vector = [1,1,1]
+        zero_vector = [2,2,2]
         
         for traj_wp in traj:
             orig_traj_x = round(traj_wp[0], sim_param.round_value)
@@ -306,8 +306,8 @@ def generate_dataset():
     main_traj.append(cube_pos)
     traj_vector.append((effect, main_traj))
 
-    ## left effect
-    effect = 'left'
+    ## right effect
+    effect = 'right'
     main_traj = [right_init_pos]                    
     main_traj.append(pos_far_right)
     main_traj.append(pos_far_center)

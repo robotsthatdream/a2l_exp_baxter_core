@@ -479,7 +479,9 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                 sim_obtained_effect = discr.compute_effect(sim_initial_obj_pos,
                                                            sim_final_obj_pos)
                                                                            
-                if sim_obtained_effect in actions_to_learn_vector:  
+#                if sim_obtained_effect in actions_to_learn_vector: 
+                if sim_obtained_effect != '' and sim_obtained_effect != None:                                                  
+#                if True:
                     print('\nsim_obtained_effect', sim_obtained_effect)
                     print('--> real - extending for', current_init_pos, sim_obtained_effect) 
                     
@@ -541,20 +543,20 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                                                                     real_final_obj_pos)
                         print('real_obtained_effect', real_obtained_effect)
                         
-                        if real_obtained_effect != '' and \
-                           real_obtained_effect in actions_to_learn_vector:
+                        if real_obtained_effect != '': # and \
+#                           real_obtained_effect in actions_to_learn_vector:
        
                             nb_trajs_found += 1
                             print('nb_trajs_found', nb_trajs_found)
                             
                             ## only store the traj if (init_pos, obtained_effect)
                             ## is not successful
-                            obtained_traj_class = \
-                                current_trajs_dict[current_init_pos, real_obtained_effect]
-                            obtained_traj_res = obtained_traj_class.get_traj_res()                        
-                            if obtained_traj_res != 'success':
-                                print('-------------> STORE NEW (', current_init_pos, real_obtained_effect, ') FOUND!')
-                                
+#                            obtained_traj_class = \
+#                                current_trajs_dict[current_init_pos, real_obtained_effect]
+#                            obtained_traj_res = obtained_traj_class.get_traj_res()                        
+#                            if obtained_traj_res != 'success':
+#                                print('-------------> STORE NEW (', current_init_pos, real_obtained_effect, ') FOUND!')
+                            if True:   
                                 for dd in extended_delta_vector:
                                     dd.set_effect(real_obtained_effect)
 #                                    dd.print_me()
@@ -562,8 +564,8 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                                 new_delta_trajs_vector += extended_delta_vector
                             
                             ## stop looking for trajs for this init_pos effect
-                            actions_to_learn_vector = [effect for effect in actions_to_learn_vector
-                                                                    if effect != real_obtained_effect]
+#                            actions_to_learn_vector = [effect for effect in actions_to_learn_vector
+#                                                                    if effect != real_obtained_effect]
     
                     ## move arm up
                     eef_pos = ros_services.call_get_eef_pose('left')

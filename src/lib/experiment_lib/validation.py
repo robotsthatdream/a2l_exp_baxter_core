@@ -256,7 +256,7 @@ def affordance_validation(current_results_folder,
                                    _list_z_axis[0]]]
             init_pos_coord = init_pos_vector[curr_init_pos]  
 
-            ''' Update eef pos'''
+            ''' Update eef pos'''            
             ros_services.call_move_to_initial_position([0.65,0.1,0.1])
             success = ros_services.call_move_to_initial_position(init_pos_coord) 
             if not success:

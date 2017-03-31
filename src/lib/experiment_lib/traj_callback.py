@@ -98,10 +98,13 @@ class Traj_callback():
 
             obj_pos_x = feedback_data.data[pos+3]
             obj_pos_y = feedback_data.data[pos+4]
-            obj_pos_z = feedback_data.data[pos+5]                
+            obj_pos_z = feedback_data.data[pos+5]
             feedback_obj_vector.append([obj_pos_x,
                                         obj_pos_y,
                                         obj_pos_z])                
+            print('real obj pos', [obj_pos_x,
+                                   obj_pos_y,
+                                   obj_pos_z])
 
         self.eef_traj_vector = feedback_wp_vector
         self.obj_traj_vector = feedback_obj_vector
@@ -111,13 +114,13 @@ class Traj_callback():
                 
 #        ''' Check if object moved'''
         real_obj_moved = False
-        thrs = 0 #sim_param.obj_moved_threshold
+        thrs = sim_param.obj_moved_threshold
         initial_obj_pos = self.obj_traj_vector[0]
         final_obj_pos = self.obj_traj_vector[-1]
 
         print('------------> BOX MOVE', 
-              abs(initial_obj_pos[0] - final_obj_pos[0]) +
-              abs(initial_obj_pos[1] - final_obj_pos[1]) +
+              abs(initial_obj_pos[0] - final_obj_pos[0]),
+              abs(initial_obj_pos[1] - final_obj_pos[1]),
               abs(initial_obj_pos[2] - final_obj_pos[2])) 
   
         real_obj_moved = \

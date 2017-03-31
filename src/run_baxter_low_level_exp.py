@@ -151,9 +151,12 @@ if __name__ == "__main__":
 #    dataset_type_vector = ['directed', 'random']
 
 #    learn_algo_vector = ['hard-coded', 'hillclimbing', 'k2']    
-    learn_algo_vector = ['hillclimbing']
+#    learn_algo_vector = ['hillclimbing']
+    learn_algo_vector = ['k2']
 #    learn_algo_vector = ['hard-coded']
 #    learn_algo_vector = ['hard-coded', 'hillclimbing']    
+    
+    sim_param.learn_algo_vector = learn_algo_vector
 
     ''' Create folders '''
     current_generated_files_folder, current_results_folder, current_plot_folder = \

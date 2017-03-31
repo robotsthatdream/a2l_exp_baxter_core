@@ -9,9 +9,10 @@ import math
 real_robot = False
 exec_traj = True
 new_dataset = False ## False to use the initial current dataset
+learn_algo_vector = ''
 
 nb_min_init_pos = 2 ## better if mod 4
-nb_min_orientation_sections = 8
+nb_min_orientation_sections = 16
 nb_min_inclination_sections = 8
 nb_min_distance_sections = 3
 single_init_pos = False ## if False, circle of init pos around the box
@@ -154,13 +155,14 @@ inclin_min_angle = round(0, round_value)
 inclin_max_angle = round(math.pi, round_value)
 
 ''' Performance computation '''
-perf_success_value = 4
+perf_success_value = 16
 perf_f_p_value = 1
 perf_fail_value = 0
 
 ''' Extend dataset '''
-nb_adapted_iterations = 20
-extend_max_trajs = 5
+nb_adapted_iterations = 15
+extend_max_trajs = len(effect_values) ## max trajs inferred from an init pos
+max_nb_inferred_tries = extend_max_trajs ## nb of tries to infer extend_max_trajs trajs from an init pos
 extend_max_movs = random_max_movs/1
 nb_init_pos_for_adaption = nb_min_init_pos
 score_threshold = 0
@@ -177,6 +179,4 @@ first_obj_pos = [0.65, 0.1, -0.145]
 obj_too_far_distance = 0.07 ## to move it back close to the eef init pos
 new_obj_pos_dist = 0.025 ## for new pos close to init obj pos 
 radio = 0.2
-max_nb_inferred_tries = extend_max_trajs * 2 #len(effect_values)
-max_inferred_traj_tries = extend_max_trajs * 2
 
