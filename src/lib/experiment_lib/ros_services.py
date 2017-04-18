@@ -3,6 +3,8 @@
 """
 @author: maestre
 """
+from __future__ import print_function
+
 import rospy
 from a2l_exp_baxter_actions.srv import *
 from record_baxter_eef_trajectory.srv import *
@@ -150,17 +152,18 @@ def call_execute_delta_motion(delta_x, delta_y, delta_z):
 '''
 a
 '''
-def call_trajectory_motion(feedback_frequency, trajectory):
+def call_trajectory_motion(feedback_frequency, trajectory, eef='left'):
     service_name = 'a2l/trajectory_motion'
     rospy.wait_for_service(service_name)
     try:
         if sim_param.debug_services:
             print('--> CALL SERVICE execute_trajectory')        
         type_name = Deltatrajectory
-        execute_traj = rospy.ServiceProxy(service_name, 
-                                                  type_name)
+        execute_traj = rospy.ServiceProxy(service_name,
+                                          type_name)
         resp = execute_traj(float(feedback_frequency),
-                            trajectory)
+                                  eef,
+                                  trajectory)
         return resp.success        
     except rospy.ServiceException, e:
         print ("Service call to execute_delta_motion failed: %s"%e) 
@@ -168,7 +171,7 @@ def call_trajectory_motion(feedback_frequency, trajectory):
 '''
 a
 '''
-def call_move_to_initial_position(init_pos_coord):
+def call_move_to_initial_position(init_pos_coord, eef='left'):
     service_name = 'a2l/move_to_initial_position'
     rospy.wait_for_service(service_name)
     try:
@@ -177,7 +180,8 @@ def call_move_to_initial_position(init_pos_coord):
         type_name = Movetoinitpos
         move_to_initial_position = rospy.ServiceProxy(service_name, 
                                              type_name)
-        resp = move_to_initial_position(init_pos_coord[0],
+        resp = move_to_initial_position(eef,
+                                        init_pos_coord[0],
                                         init_pos_coord[1],
                                         init_pos_coord[2])
         time.sleep(1)
@@ -209,7 +213,7 @@ def call_restart_world(element,
         print ("Service call to restart_world failed: %s"%e)    
         
 if __name__  == "__main__":
-    print("cube :", call_get_model_state("cube"))
+#    print("cube :", call_get_model_state("cube"))
     
 #    print("create directed dataset", 
 #          call_generate_directed_dataset('directed'))
@@ -224,10 +228,13 @@ if __name__  == "__main__":
 #                                    0))
     
 #    print("call_move_to_initial_position left", 
-#          call_move_to_initial_position(1))
+#          call_move_to_initial_position([0.65,0.2,0.1],
+#                                         'right'))
     
-#    print("call_trajectory_motion", 
-#           call_trajectory_motion(1, [0.65,0.2,0.1,0.65,0,0.1]))    
+    print("call_trajectory_motion", 
+           call_trajectory_motion(1, 
+                                  [0.65, -0.4, 0],
+                                  'right'))
     
    
 

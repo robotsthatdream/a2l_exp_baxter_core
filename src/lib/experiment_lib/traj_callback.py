@@ -37,7 +37,8 @@ class Traj_callback():
                  simulated_traj,
                  sim_obj_moved,
                  current_orien, current_inclin, current_dist,
-                 below_box):
+                 below_box,
+                 curr_arm = 'left'):
 
         self.current_orien = current_orien
         self.current_inclin = current_inclin
@@ -66,7 +67,8 @@ class Traj_callback():
                 ## execute trajectory
                 simulated_traj_vector = [i for el in simulated_traj for i in el] ## [float]
                 res_exec = ros_services.call_trajectory_motion(sim_param.feedback_window, 
-                                                               simulated_traj_vector)
+                                                               simulated_traj_vector,
+                                                               curr_arm)
 #                rospy.spin()
                 if sim_param.debug_infer:
                     if res_exec:
@@ -102,9 +104,9 @@ class Traj_callback():
             feedback_obj_vector.append([obj_pos_x,
                                         obj_pos_y,
                                         obj_pos_z])                
-            print('real obj pos', [obj_pos_x,
-                                   obj_pos_y,
-                                   obj_pos_z])
+#            print('real obj pos', [obj_pos_x,
+#                                   obj_pos_y,
+#                                   obj_pos_z])
 
         self.eef_traj_vector = feedback_wp_vector
         self.obj_traj_vector = feedback_obj_vector

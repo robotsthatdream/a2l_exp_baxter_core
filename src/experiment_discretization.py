@@ -12,7 +12,7 @@ sys.path.append(lib_exp_path)
 
 import dataset_generation as dataset
 import discretize as discr
-import inference_ros as infer_ros
+import validation
 import learning as ln
 import simulation_parameters as sim_param
 import inf_traj_series_dataset_classes as dataset_series_classes
@@ -120,14 +120,15 @@ def run_exp_dataset_size(dataset_type_vector,
                     ## Infere trajs
                     if sim_param.print_time:
                         t = time.process_time()            
-                    current_stats = infer_ros.infere_trajectories(current_results_folder,
-                                                              bn, 
-                                                              current_algo,
-                                                              dataset_type,
-                                                              new_obj_pos,
-                                                              sim_param.nb_min_init_pos,
-                                                              current_orien,
-                                                              current_dist)
+#                    current_stats = infer_ros.infere_trajectories(current_results_folder,
+#                                                              bn, 
+#                                                              current_algo,
+#                                                              dataset_type,
+#                                                              new_obj_pos,
+#                                                              sim_param.nb_min_init_pos,
+#                                                              current_orien,
+#                                                              current_dist)
+                    current_stats = []
                     if sim_param.print_time:
                         print('Elapsed time for infere_trajs', 
                               time.process_time() - t)

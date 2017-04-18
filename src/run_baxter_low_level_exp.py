@@ -21,7 +21,7 @@ import statistics as stats
 import simulation_parameters as sim_param
 import experiment_a2l as exp_a2l
 import experiment_discretization as exp_discr
-import inference_ros as infer_ros
+import validation
 import iteration_classes as iter_class
 import ros_services
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
                                         
             ''' Compute score '''
             for dataset_stat in dataset_stats_vector:
-                infer_ros.compute_score_norm(dataset_stat, learn_algo_vector)
+                validation.compute_score_norm(dataset_stat, learn_algo_vector)
     
             '''
             Compute cumulated performance value of each init position
@@ -401,7 +401,7 @@ if __name__ == "__main__":
 
                 ''' Compute score '''
                 current_iter_dataset_stats_class = current_iter_dataset_stats_class_stats_vector[0]
-                infer_ros.compute_score_norm(current_iter_dataset_stats_class,
+                validation.compute_score_norm(current_iter_dataset_stats_class,
                                     learn_algo_vector)
                                         
                 current_iter_score_vector = [current_iter_dataset_stats_class.get_dataset_score()]
@@ -421,7 +421,7 @@ if __name__ == "__main__":
                         extended_initial_pos_vector)                    
                 
                 ''' Store iterations '''
-                better_norm_score = infer_ros.check_better_score_norm(current_iter_score_vector, 
+                better_norm_score = validation.check_better_score_norm(current_iter_score_vector, 
                                                         previous_iter_score_vector)
                 current_iter_data_class = iter_class.Iteration_data(
                      current_iter_dataset_stats_class_stats_vector, ## only for random

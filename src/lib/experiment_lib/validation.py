@@ -916,7 +916,7 @@ def plot_save_traj_3d(init_pos_vector,
     
     ## view
     ## All commented = diagonal view
-    ax.view_init(90,0) # top view
+#    ax.view_init(90,0) # top view
 #    ax.view_init(0,0) # front view
 #    ax.view_init(0,270) # left view
 

@@ -18,7 +18,7 @@ import dataset_random_3D as dr
 import environment_dynamics as env
 import environment_delta as delta
 import discretize_effect as discr
-import inference_ros as infer_ros
+import validation
 import inf_traj_series_dataset_classes as dataset_series_classes
 import simulation_parameters as sim_param
 import ros_services
@@ -166,7 +166,7 @@ def compute_cumulated_perf(current_dataset,
         dataset_series_classes.Dataset_stats(dataset_name)
     for current_algo in learn_algo_vector:
         current_perf_value_dict = \
-            infer_ros.compute_perf_value_for_init_pos(
+            validation.compute_perf_value_for_init_pos(
                     current_dataset,
                     current_algo,
                     initial_pos_vector)  
@@ -412,6 +412,7 @@ def extend_trajectory(current_traj_vector, ## [WPs]
                     
                 ## normalize mov size
                 var_vector = [var_x, var_y]
+                print(var_vector)
 #                dims_vector = 0               
 #                for value in var_vector:
 #                    if value != 0:                    
